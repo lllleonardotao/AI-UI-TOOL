@@ -247,6 +247,17 @@
                 </div>
             </div>
 
+            <!-- Debug Mode -->
+            <div class="mb-6">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="debugMode" class="mr-2">
+                    <span class="text-gray-700 text-sm font-medium">🐛 启用调试模式（显示详细日志）</span>
+                </label>
+                <p class="text-gray-600 text-xs mt-1 ml-6">
+                    开启后会在控制台显示详细的API请求和响应信息
+                </p>
+            </div>
+
             <div class="flex gap-3">
                 <button onclick="saveSettings()" class="flex-1 btn-primary text-white font-bold py-3 rounded-xl">
                     保存
@@ -306,6 +317,14 @@
         let apiKey = localStorage.getItem('openrouter_api_key') || '';
         let currentResults = [];
         let customModels = JSON.parse(localStorage.getItem('custom_models') || '[]');
+        let debugMode = localStorage.getItem('debug_mode') === 'true';
+
+        // 调试日志函数
+        function debugLog(...args) {
+            if (debugMode) {
+                console.log(...args);
+            }
+        }
 
         // 页面加载时检查API Key
         window.onload = () => {
@@ -315,6 +334,12 @@
             updateCharCount();
             updateCostEstimate();
             loadCustomModels();
+
+            // 恢复调试模式设置
+            const debugCheckbox = document.getElementById('debugMode');
+            if (debugCheckbox) {
+                debugCheckbox.checked = debugMode;
+            }
         };
 
         // 自定义模型管理
@@ -476,8 +501,14 @@
             if (key) {
                 apiKey = key;
                 localStorage.setItem('openrouter_api_key', key);
+
+                // 保存调试模式设置
+                const debugCheckbox = document.getElementById('debugMode');
+                debugMode = debugCheckbox.checked;
+                localStorage.setItem('debug_mode', debugMode.toString());
+
                 closeSettings();
-                alert('✅ API Key已保存');
+                alert('✅ 设置已保存');
             } else {
                 alert('⚠️ 请输入有效的API Key');
             }
@@ -596,9 +627,27 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         async function generateImage(model, prompt) {
-            console.log('🚀 Calling model:', model);
-            console.log('📝 Prompt:', prompt.substring(0, 100) + '...');
-            
+            debugLog('🚀 Calling model:', model);
+            debugLog('📝 Prompt:', prompt.substring(0, 100) + '...');
+
+            // 根据模型类型构建不同的请求体
+            const requestBody = {
+                model: model,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            };
+
+            // 只对支持的模型添加 modalities
+            if (model.includes('gemini') && model.includes('image')) {
+                requestBody.modalities = ["image", "text"];
+            }
+
+            debugLog('📤 Request body:', JSON.stringify(requestBody, null, 2));
+
             const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -607,139 +656,129 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     'HTTP-Referer': window.location.href,
                     'X-Title': 'AI UI Design Comparator'
                 },
-                body: JSON.stringify({
-                    model: model,
-                    modalities: ["image", "text"],
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ]
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                console.error('❌ API Error:', error);
-                throw new Error(error.error?.message || '生成失败');
+                const errorText = await response.text();
+                console.error('❌ API Error Response:', errorText);
+                let errorMessage = '生成失败';
+                try {
+                    const error = JSON.parse(errorText);
+                    errorMessage = error.error?.message || error.message || errorMessage;
+                } catch (e) {
+                    errorMessage = errorText.substring(0, 100);
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            console.log('✅ Full API Response:', JSON.stringify(data, null, 2));
-            
+            debugLog('✅ Full API Response:', JSON.stringify(data, null, 2));
+
             const message = data.choices?.[0]?.message;
             if (!message) {
+                console.error('❌ No message in response');
+                console.error('Full data:', JSON.stringify(data, null, 2));
                 throw new Error('API响应格式错误：没有message');
             }
-            
-            // 方法1: 检查images数组
-            if (message.images && message.images.length > 0) {
-                console.log('📸 Found images array, length:', message.images.length);
+
+            debugLog('📦 Message keys:', Object.keys(message));
+            debugLog('📦 Message structure:', JSON.stringify(message, null, 2));
+
+            // 尝试从响应中提取图片URL
+            const imageUrl = extractImageFromResponse(message);
+
+            if (!imageUrl) {
+                console.error('❌ No image found in response');
+                console.error('Available message fields:', Object.keys(message));
+                console.error('Full message:', JSON.stringify(message, null, 2));
+                throw new Error('模型返回了数据，但没有找到图片。请检查控制台日志查看详细响应。');
+            }
+
+            debugLog('✅ Successfully extracted image');
+            debugLog('Image type:', typeof imageUrl);
+            debugLog('Image length:', imageUrl.length);
+            debugLog('Image preview:', imageUrl.substring(0, 100));
+
+            return imageUrl;
+        }
+
+        // 从API响应中提取图片URL的统一函数
+        function extractImageFromResponse(message) {
+            // 方法1: 检查 content 数组 (最常见的格式)
+            if (Array.isArray(message.content)) {
+                debugLog('🔍 Checking content array, length:', message.content.length);
+                for (let i = 0; i < message.content.length; i++) {
+                    const item = message.content[i];
+                    debugLog(`  [${i}] type:`, item.type, 'keys:', Object.keys(item));
+
+                    // Gemini 格式: {type: "image_url", image_url: {url: "data:image/..."}}
+                    if (item.type === 'image_url') {
+                        if (typeof item.image_url === 'string') {
+                            debugLog('✅ Found image_url (string)');
+                            return item.image_url;
+                        }
+                        if (item.image_url && item.image_url.url) {
+                            debugLog('✅ Found image_url.url');
+                            return item.image_url.url;
+                        }
+                    }
+
+                    // Claude/GPT 格式: {type: "image", source: {data: "..."}}
+                    if (item.type === 'image') {
+                        if (item.url) {
+                            debugLog('✅ Found item.url');
+                            return item.url;
+                        }
+                        if (item.data) {
+                            debugLog('✅ Found item.data');
+                            return item.data;
+                        }
+                        if (item.source && item.source.data) {
+                            debugLog('✅ Found item.source.data');
+                            return item.source.data;
+                        }
+                    }
+                }
+            }
+
+            // 方法2: content 是字符串，可能包含URL或markdown
+            if (typeof message.content === 'string') {
+                debugLog('🔍 Checking string content');
+                const url = extractImageUrl(message.content);
+                if (url) {
+                    debugLog('✅ Extracted URL from string');
+                    return url;
+                }
+            }
+
+            // 方法3: 检查 images 数组
+            if (Array.isArray(message.images) && message.images.length > 0) {
+                debugLog('🔍 Checking images array');
                 const imageData = message.images[0];
-                
-                // images[0]可能是字符串
                 if (typeof imageData === 'string') {
-                    console.log('✅ Image is string, first 50 chars:', imageData.substring(0, 50));
+                    debugLog('✅ Found images[0] (string)');
                     return imageData;
                 }
-                
-                // images[0]可能是对象 {url: "..."}
-                if (typeof imageData === 'object') {
-                    console.log('✅ Image is object:', Object.keys(imageData));
+                if (imageData && typeof imageData === 'object') {
                     if (imageData.url) return imageData.url;
                     if (imageData.data) return imageData.data;
                     if (imageData.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
                 }
             }
-            
-            // 方法2: 检查content (Gemini/GPT格式)
-            if (message.content) {
-                console.log('📝 Found content, type:', typeof message.content);
-                
-                // content可能是数组
-                if (Array.isArray(message.content)) {
-                    console.log('✅ Content is array, length:', message.content.length);
-                    for (let i = 0; i < message.content.length; i++) {
-                        const item = message.content[i];
-                        console.log(`Content[${i}] type:`, item.type);
-                        console.log(`Content[${i}] keys:`, Object.keys(item));
-                        
-                        // 重点！Gemini的格式
-                        if (item.type === 'image_url') {
-                            console.log('🎯 Found image_url type!');
-                            const imageUrl = item.image_url;
-                            console.log('image_url value type:', typeof imageUrl);
-                            console.log('image_url keys:', imageUrl && typeof imageUrl === 'object' ? Object.keys(imageUrl) : 'N/A');
-                            
-                            // imageUrl 是字符串
-                            if (typeof imageUrl === 'string') {
-                                console.log('✅ image_url is direct string');
-                                console.log('String length:', imageUrl.length);
-                                console.log('First 100 chars:', imageUrl.substring(0, 100));
-                                console.log('🎉 RETURNING IMAGE URL (string)');
-                                return imageUrl;
-                            }
-                            
-                            // imageUrl 是对象 {url: "..."}
-                            if (imageUrl && typeof imageUrl === 'object' && imageUrl.url) {
-                                console.log('✅ image_url.url exists');
-                                console.log('url type:', typeof imageUrl.url);
-                                console.log('url length:', imageUrl.url.length);
-                                console.log('First 100 chars:', imageUrl.url.substring(0, 100));
-                                console.log('🎉 RETURNING IMAGE URL (object.url)');
-                                return imageUrl.url;
-                            }
-                            
-                            console.warn('⚠️ image_url found but format unknown:', imageUrl);
-                        }
-                        
-                        // 类型2: image
-                        if (item.type === 'image') {
-                            console.log('✅ Found image type');
-                            if (item.url) {
-                                console.log('🎉 RETURNING item.url');
-                                return item.url;
-                            }
-                            if (item.data) {
-                                console.log('🎉 RETURNING item.data');
-                                return item.data;
-                            }
-                            if (item.source && item.source.data) {
-                                console.log('🎉 RETURNING item.source.data');
-                                return item.source.data;
-                            }
-                        }
-                    }
-                }
-                
-                // content是字符串
-                if (typeof message.content === 'string') {
-                    console.log('Content is string, trying to extract URL');
-                    const url = extractImageUrl(message.content);
-                    if (url) {
-                        console.log('✅ Extracted URL from string content');
-                        console.log('🎉 RETURNING extracted URL');
-                        return url;
-                    }
-                }
-            }
-            
-            // 方法3: 检查其他可能的字段
+
+            // 方法4: 直接字段
             if (message.image) {
-                console.log('✅ Found message.image field');
+                debugLog('✅ Found message.image');
                 return message.image;
             }
-            
             if (message.image_url) {
-                console.log('✅ Found message.image_url field');
+                debugLog('✅ Found message.image_url');
                 return message.image_url;
             }
-            
-            // 没找到图片
-            console.error('❌ No image found in response. Available fields:', Object.keys(message));
-            console.error('Full message:', JSON.stringify(message, null, 2));
-            throw new Error('模型返回了数据，但没有找到图片。可能这个模型不支持图像生成，或返回格式不兼容。');
+
+            // 未找到
+            return null;
         }
 
         // 图片URL解析器
