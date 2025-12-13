@@ -761,6 +761,18 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     return imageData;
                 }
                 if (imageData && typeof imageData === 'object') {
+                    // 检查嵌套的 image_url 对象（Flux/GPT格式）
+                    if (imageData.image_url) {
+                        if (typeof imageData.image_url === 'string') {
+                            debugLog('✅ Found images[0].image_url (string)');
+                            return imageData.image_url;
+                        }
+                        if (imageData.image_url.url) {
+                            debugLog('✅ Found images[0].image_url.url');
+                            return imageData.image_url.url;
+                        }
+                    }
+                    // 检查直接字段
                     if (imageData.url) return imageData.url;
                     if (imageData.data) return imageData.data;
                     if (imageData.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
