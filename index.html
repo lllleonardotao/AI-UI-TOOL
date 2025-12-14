@@ -422,6 +422,30 @@
                 model: 'anthropic/claude-3.5-sonnet',
                 cost: 0.01,
                 type: 'text-to-image-desc'
+            },
+            'claude-code': {
+                name: 'Claude 3.5 (代码)',
+                model: 'anthropic/claude-3.5-sonnet',
+                cost: 0.01,
+                type: 'code'
+            },
+            'gpt4-code': {
+                name: 'GPT-4 Turbo (代码)',
+                model: 'openai/gpt-4-turbo',
+                cost: 0.01,
+                type: 'code'
+            },
+            'deepseek-code': {
+                name: 'DeepSeek Coder (代码)',
+                model: 'deepseek/deepseek-coder',
+                cost: 0.0001,
+                type: 'code'
+            },
+            'gpt4o-code': {
+                name: 'GPT-4o (代码)',
+                model: 'openai/gpt-4o',
+                cost: 0.005,
+                type: 'code'
             }
         };
 
@@ -1004,11 +1028,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             addProgressItem(modelKey, 'pending');
 
             try {
-                let imageUrl;
+                let imageUrl = null;
+                let codeContent = null;
                 
                 if (config.type === 'image') {
                     // 直接生成图片的模型（Gemini, Flux, GPT-5）
                     imageUrl = await generateImage(config.model, prompt, platform);
+                } else if (config.type === 'code') {
+                    // 生成代码的模型
+                    codeContent = await generateCode(config.model, prompt, platform);
                 } else {
                     // Claude：生成描述后用免费的Gemini生成图
                     const description = await generateDescription(config.model, prompt);
@@ -1017,8 +1045,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
                 // 成功
                 updateProgressItem(modelKey, 'success');
-                const result = { modelName: config.name, imageUrl: imageUrl, cost: config.cost, isError: false, errorMsg: '' };
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                const result = { 
+                    modelName: config.name, 
+                    imageUrl: imageUrl, 
+                    codeContent: codeContent,
+                    cost: config.cost, 
+                    isError: false, 
+                    errorMsg: '' 
+                };
+                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg, result.codeContent);
                 
                 // 返回结果，用于历史记录
                 return result;
@@ -1413,6 +1448,60 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 console.log('📦 isBase64:', isBase64);
                 console.log('📦 isHttpUrl:', isHttpUrl);
+                
+                // 如果是代码内容
+                if (codeContent) {
+                    // 代码预览卡片
+                    const codeContainer = document.createElement('div');
+                    codeContainer.className = 'aspect-square bg-gray-50 flex flex-col overflow-hidden';
+                    
+                    // 代码预览区域（上半部分）
+                    const previewArea = document.createElement('div');
+                    previewArea.className = 'flex-1 relative border-b border-gray-200';
+                    
+                    // 使用 iframe 预览代码
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'w-full h-full border-0';
+                    iframe.srcdoc = codeContent;
+                    previewArea.appendChild(iframe);
+                    
+                    codeContainer.appendChild(previewArea);
+                    
+                    // 信息区域
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'p-4 bg-white';
+                    infoDiv.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-800 font-semibold">${modelName}</span>
+                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                👁️ 查看代码
+                            </button>
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                ⬇️ 下载代码
+                            </button>
+                        </div>
+                    `;
+                    
+                    // 查看代码按钮
+                    infoDiv.querySelectorAll('button')[0].onclick = (e) => {
+                        e.stopPropagation();
+                        showCodeModal(codeContent, modelName);
+                    };
+                    
+                    // 下载代码按钮
+                    infoDiv.querySelectorAll('button')[1].onclick = (e) => {
+                        e.stopPropagation();
+                        downloadCode(codeContent, modelName);
+                    };
+                    
+                    codeContainer.appendChild(infoDiv);
+                    card.appendChild(codeContainer);
+                    document.getElementById('resultsGrid').appendChild(card);
+                    return;
+                }
                 
                 if (isBase64 || isHttpUrl) {
                     // 使用JavaScript创建图片元素，避免HTML字符串问题
