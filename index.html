@@ -2305,9 +2305,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                 // 显示真实图片缩略图
                                 return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}">`;
                             } else if (r.codeContent) {
-                                // 显示代码预览缩略图
-                                return `<div class="w-16 h-16 bg-white rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer code-thumbnail" data-code="${escapeHtml(JSON.stringify(r.codeContent))}" data-model="${escapeHtml(r.modelName)}" title="${r.modelName}">
-                                    <iframe srcdoc="${escapeHtml(r.codeContent)}" class="w-full h-full border-0 pointer-events-none" style="transform: scale(0.25); transform-origin: 0 0; width: 400%; height: 400%;"></iframe>
+                                // 显示代码预览缩略图（使用iframe缩放显示）
+                                const codePreviewId = `code-preview-${item.id}-${idx}`;
+                                return `<div class="w-16 h-16 bg-white rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer code-thumbnail group" data-code="${escapeHtml(JSON.stringify(r.codeContent))}" data-model="${escapeHtml(r.modelName)}" title="${r.modelName}">
+                                    <iframe id="${codePreviewId}" srcdoc="${escapeHtml(r.codeContent)}" class="w-full h-full border-0 pointer-events-none" style="transform: scale(0.2); transform-origin: 0 0; width: 500%; height: 500%;"></iframe>
+                                    <div class="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <span class="text-blue-600 text-xs font-medium">💻 代码</span>
+                                    </div>
                                 </div>`;
                             } else {
                                 // 没有缩略图时显示占位符
