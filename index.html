@@ -656,6 +656,33 @@
             const platformTitle = platform === 'mobile' ? 'mobile app UI design' : 'desktop web UI design';
 
             // 优化Prompt（加入UI设计约束）
+            let platformConstraints = '';
+            if (platform === 'mobile') {
+                platformConstraints = `
+Mobile-specific constraints (CRITICAL - must follow):
+- Layout: Portrait orientation (vertical/portrait layout), single column design
+- Screen ratio: 9:16 or similar mobile aspect ratio (tall and narrow)
+- Navigation: Include mobile navigation elements (bottom tab bar, hamburger menu, or top navigation bar)
+- Status bar: Include iOS status bar (with time, battery, signal) or Android status bar at the top
+- Touch targets: Large touch-friendly buttons and interactive elements (minimum 44x44px equivalent)
+- Spacing: Generous padding and margins suitable for mobile screens
+- Typography: Mobile-optimized font sizes, readable on small screens
+- Components: Mobile-specific UI patterns (swipe gestures, pull-to-refresh indicators, mobile cards)
+- Avoid: Desktop layouts, horizontal scrolling, multi-column grids, wide desktop-style navigation`;
+            } else {
+                platformConstraints = `
+Desktop-specific constraints (CRITICAL - must follow):
+- Layout: Landscape orientation (horizontal/wide layout), multi-column design allowed
+- Screen ratio: 16:9 or similar desktop aspect ratio (wide and short)
+- Navigation: Include desktop navigation elements (top menu bar, sidebar navigation, breadcrumbs)
+- Window controls: Include browser window controls or desktop app window frame
+- Mouse interactions: Desktop-optimized hover states and clickable elements
+- Spacing: Desktop-appropriate spacing, can be more compact than mobile
+- Typography: Desktop-optimized font sizes, can be smaller than mobile
+- Components: Desktop-specific UI patterns (dropdown menus, tooltips, right-click context menus)
+- Avoid: Mobile layouts, portrait orientation, bottom navigation bars, mobile-specific gestures`;
+            }
+
             const optimizedPrompt = `Create a clean, modern ${platformTitle}.
 
 User requirements: ${prompt}
@@ -667,6 +694,7 @@ Design constraints:
 - Elements: realistic UI components (buttons, inputs, cards)
 - Colors: harmonious color scheme
 - Output: high-fidelity UI mockup, NOT illustration
+${platformConstraints}
 
 Avoid: 3D elements, realistic photos, cartoon style`;
 
@@ -761,20 +789,28 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 // 对于所有 Gemini 图像模型，确保平台信息在 prompt 中明确显示
                 // 即使 prompt 中已有平台信息，也再次明确标注以确保模型理解
-                if (!prompt.includes(`Platform: ${platformInfo}`)) {
-                    requestBody.messages[0].content = `${prompt}\n\nPlatform: ${platformInfo}`;
-                    debugLog('📱 Added explicit platform info for Gemini model:', platformInfo);
+                const platformEmphasis = platform === 'mobile' 
+                    ? `\n\nIMPORTANT: This must be a MOBILE APP UI design with portrait orientation, mobile navigation (bottom tabs or hamburger menu), status bar, and touch-friendly elements. The layout must be vertical/single-column, NOT desktop-style.`
+                    : `\n\nIMPORTANT: This must be a DESKTOP WEB APPLICATION UI design with landscape orientation, desktop navigation (top menu or sidebar), and mouse-optimized elements. The layout can be multi-column, NOT mobile-style.`;
+                
+                if (!prompt.includes('IMPORTANT: This must be')) {
+                    requestBody.messages[0].content = `${prompt}${platformEmphasis}`;
+                    debugLog('📱 Added explicit platform emphasis for Gemini model:', platform);
                 }
             } else {
                 // 对于其他模型（包括自定义模型），也确保平台信息明确
-                // 检查 prompt 中是否已有明确的平台标注
-                const hasPlatformInfo = prompt.includes('Platform:') || 
-                                      prompt.includes('platform:') || 
-                                      prompt.includes(platformInfo);
+                const platformEmphasis = platform === 'mobile' 
+                    ? `\n\nIMPORTANT: This must be a MOBILE APP UI design with portrait orientation, mobile navigation, status bar, and touch-friendly elements.`
+                    : `\n\nIMPORTANT: This must be a DESKTOP WEB APPLICATION UI design with landscape orientation and desktop navigation.`;
                 
-                if (!hasPlatformInfo) {
-                    requestBody.messages[0].content = `${prompt}\n\nPlatform: ${platformInfo}`;
-                    debugLog('📱 Added platform info for model:', model, platformInfo);
+                // 检查 prompt 中是否已有明确的平台强调
+                const hasPlatformEmphasis = prompt.includes('IMPORTANT: This must be') || 
+                                          prompt.includes('MOBILE APP UI') || 
+                                          prompt.includes('DESKTOP WEB APPLICATION');
+                
+                if (!hasPlatformEmphasis) {
+                    requestBody.messages[0].content = `${prompt}${platformEmphasis}`;
+                    debugLog('📱 Added platform emphasis for model:', model, platform);
                 }
             }
 
