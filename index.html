@@ -2207,7 +2207,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             item.results.forEach(result => {
                 if (result.isError) {
                     // 错误结果
-                    addResultCard(result.modelName, '', result.cost, true, result.errorMsg);
+                    addResultCard(result.modelName, '', result.cost, true, result.errorMsg, null);
                 } else {
                     // 成功结果，但图片数据未保存，显示提示
                     const card = document.createElement('div');
