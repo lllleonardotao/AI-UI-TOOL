@@ -807,7 +807,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         resultsToSave: resultsToSave.map(r => ({ name: r.modelName, hasImage: !!r.imageUrl, isError: r.isError }))
                     });
                     
-                    saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
+                    await saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
                     
                     debugLog('✅ 历史记录已保存，结果数量:', resultsToSave.length);
                     console.log('✅ 历史记录保存成功');
@@ -1532,8 +1532,55 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }
         }
 
+        /**
+         * 生成图片缩略图（小尺寸，用于历史记录显示）
+         */
+        async function generateThumbnail(imageUrl, maxSize = 150) {
+            return new Promise((resolve, reject) => {
+                if (!imageUrl || imageUrl.startsWith('http')) {
+                    // HTTP URL 直接返回，不生成缩略图
+                    resolve(imageUrl);
+                    return;
+                }
+                
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                
+                img.onload = () => {
+                    try {
+                        // 计算缩略图尺寸（保持宽高比）
+                        let width = img.width;
+                        let height = img.height;
+                        const ratio = Math.min(maxSize / width, maxSize / height);
+                        width = Math.floor(width * ratio);
+                        height = Math.floor(height * ratio);
+                        
+                        // 创建 Canvas 并绘制缩略图
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 转换为 base64（质量降低以减小文件大小）
+                        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+                        resolve(thumbnail);
+                    } catch (error) {
+                        console.error('生成缩略图失败:', error);
+                        resolve(null);
+                    }
+                };
+                
+                img.onerror = () => {
+                    resolve(null);
+                };
+                
+                img.src = imageUrl;
+            });
+        }
+
         // 历史记录相关函数
-        function saveGenerationHistory(prompt, platform, selectedModels, results) {
+        async function saveGenerationHistory(prompt, platform, selectedModels, results) {
             console.log('🔵 saveGenerationHistory 被调用:', {
                 promptLength: prompt.length,
                 platform: platform,
@@ -1547,13 +1594,22 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 const existingHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
                 console.log('🔵 现有历史记录数量:', existingHistory.length);
                 
-                // 历史记录中不保存任何图片数据信息，只保存基本元数据
-                const processedResults = results.map(r => ({
-                    modelName: r.modelName,
-                    cost: r.cost,
-                    isError: r.isError,
-                    errorMsg: r.errorMsg
-                    // 不保存任何图片相关信息（imageUrl, hasImage等）
+                // 为每个结果生成缩略图（异步）
+                const processedResults = await Promise.all(results.map(async (r) => {
+                    const result = {
+                        modelName: r.modelName,
+                        cost: r.cost,
+                        isError: r.isError,
+                        errorMsg: r.errorMsg,
+                        thumbnail: null
+                    };
+                    
+                    // 如果成功且有图片，生成缩略图
+                    if (!r.isError && r.imageUrl) {
+                        result.thumbnail = await generateThumbnail(r.imageUrl, 150);
+                    }
+                    
+                    return result;
                 }));
                 
                 const historyItem = {
@@ -1760,7 +1816,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 historyList.appendChild(historyCard);
                 
-                // 历史记录中不再显示图片缩略图，无需添加点击事件
+                // 为缩略图添加点击事件（查看大图）
+                const thumbnails = historyCard.querySelectorAll(`#history-thumbnails-${item.id} img`);
+                thumbnails.forEach(img => {
+                    img.addEventListener('click', () => {
+                        showImageModal(img.src);
+                    });
+                });
             });
         }
 
