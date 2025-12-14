@@ -2091,12 +2091,18 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         cost: r.cost,
                         isError: r.isError,
                         errorMsg: r.errorMsg,
-                        thumbnail: null
+                        thumbnail: null,
+                        codeContent: null // 保存代码内容用于历史记录预览
                     };
                     
                     // 如果成功且有图片，生成缩略图
                     if (!r.isError && r.imageUrl) {
                         result.thumbnail = await generateThumbnail(r.imageUrl, 150);
+                    }
+                    
+                    // 如果成功且有代码内容，保存代码内容用于预览
+                    if (!r.isError && r.codeContent) {
+                        result.codeContent = r.codeContent;
                     }
                     
                     return result;
@@ -2296,8 +2302,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             if (r.isError) {
                                 return `<div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-xs">❌</div>`;
                             } else if (r.thumbnail) {
-                                // 显示真实缩略图
+                                // 显示真实图片缩略图
                                 return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}">`;
+                            } else if (r.codeContent) {
+                                // 显示代码预览缩略图
+                                return `<div class="w-16 h-16 bg-white rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer code-thumbnail" data-code="${escapeHtml(JSON.stringify(r.codeContent))}" data-model="${escapeHtml(r.modelName)}" title="${r.modelName}">
+                                    <iframe srcdoc="${escapeHtml(r.codeContent)}" class="w-full h-full border-0 pointer-events-none" style="transform: scale(0.25); transform-origin: 0 0; width: 400%; height: 400%;"></iframe>
+                                </div>`;
                             } else {
                                 // 没有缩略图时显示占位符
                                 return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs" title="${r.modelName}">📷</div>`;
@@ -2314,6 +2325,22 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 thumbnails.forEach(img => {
                     img.addEventListener('click', () => {
                         showImageModal(img.src);
+                    });
+                });
+                
+                // 为代码预览缩略图添加点击事件（查看代码预览）
+                const codeThumbnails = historyCard.querySelectorAll(`#history-thumbnails-${item.id} .code-thumbnail`);
+                codeThumbnails.forEach(thumb => {
+                    thumb.addEventListener('click', () => {
+                        try {
+                            const codeContent = JSON.parse(thumb.getAttribute('data-code'));
+                            const modelName = thumb.getAttribute('data-model');
+                            const platformRadio = document.querySelector('input[name="platform"]:checked');
+                            const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                            showCodePreview(codeContent, modelName, currentPlatform);
+                        } catch (e) {
+                            console.error('解析代码内容失败:', e);
+                        }
                     });
                 });
             });
