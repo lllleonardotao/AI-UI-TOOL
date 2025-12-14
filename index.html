@@ -343,6 +343,9 @@
 
         // 页面加载时检查API Key
         window.onload = () => {
+            console.log('✅ AI UI Design Comparator v2.0 已加载');
+            console.log('🔧 JavaScript正常运行');
+
             if (!apiKey) {
                 showSettings();
             }
@@ -355,6 +358,9 @@
             if (debugCheckbox) {
                 debugCheckbox.checked = debugMode;
             }
+
+            // 在页面标题添加版本号
+            document.title = 'AI UI Design Comparator v2.0';
         };
 
         // 自定义模型管理
