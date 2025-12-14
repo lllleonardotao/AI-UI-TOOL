@@ -1352,33 +1352,55 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
         // 历史记录相关函数
         function saveGenerationHistory(prompt, platform, selectedModels, results) {
-            const historyItem = {
-                id: Date.now(),
-                timestamp: new Date().toISOString(),
-                prompt: prompt,
-                platform: platform,
-                platformText: platform === 'mobile' ? '手机端' : 'PC端',
-                selectedModels: selectedModels,
-                results: results.map(r => ({
-                    modelName: r.modelName,
-                    imageUrl: r.imageUrl,
-                    cost: r.cost,
-                    isError: r.isError,
-                    errorMsg: r.errorMsg
-                })),
-                totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
-            };
-            
-            // 添加到历史记录数组的开头（最新的在前面）
-            generationHistory.unshift(historyItem);
-            
-            // 限制历史记录数量（最多保存50条）
-            if (generationHistory.length > 50) {
-                generationHistory = generationHistory.slice(0, 50);
+            try {
+                // 每次保存前都从 localStorage 重新加载，确保不会覆盖其他记录
+                const existingHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
+                
+                const historyItem = {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    prompt: prompt,
+                    platform: platform,
+                    platformText: platform === 'mobile' ? '手机端' : 'PC端',
+                    selectedModels: selectedModels,
+                    results: results.map(r => ({
+                        modelName: r.modelName,
+                        imageUrl: r.imageUrl,
+                        cost: r.cost,
+                        isError: r.isError,
+                        errorMsg: r.errorMsg
+                    })),
+                    totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
+                };
+                
+                // 添加到历史记录数组的开头（最新的在前面）
+                existingHistory.unshift(historyItem);
+                
+                // 限制历史记录数量（最多保存50条）
+                const finalHistory = existingHistory.length > 50 
+                    ? existingHistory.slice(0, 50) 
+                    : existingHistory;
+                
+                // 更新全局变量
+                generationHistory = finalHistory;
+                
+                // 保存到 localStorage
+                localStorage.setItem('generation_history', JSON.stringify(finalHistory));
+                
+                console.log('✅ 历史记录已保存:', {
+                    id: historyItem.id,
+                    prompt: prompt.substring(0, 30) + '...',
+                    resultsCount: results.length,
+                    totalHistoryCount: finalHistory.length
+                });
+            } catch (error) {
+                console.error('❌ 保存历史记录失败:', error);
+                console.error('错误详情:', {
+                    prompt: prompt.substring(0, 30),
+                    resultsLength: results.length,
+                    error: error.message
+                });
             }
-            
-            // 保存到 localStorage
-            localStorage.setItem('generation_history', JSON.stringify(generationHistory));
         }
 
         function showHistory() {
