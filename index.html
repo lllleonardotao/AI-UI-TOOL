@@ -131,37 +131,8 @@
                     <!-- Model Selection -->
                     <div class="mb-4">
                         <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
-                        <div class="space-y-2">
-                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="checkbox" id="model-gemini" class="mr-3" checked>
-                                <span class="text-gray-800 font-medium flex-1">Gemini Image</span>
-                                <span class="text-green-600 text-xs font-bold">免费 🎉</span>
-                            </label>
-                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="checkbox" id="model-gemini-flash" class="mr-3" checked>
-                                <span class="text-gray-800 font-medium flex-1">Gemini 2.5 Flash Image</span>
-                                <span class="text-green-600 text-xs font-bold">免费 🎉</span>
-                            </label>
-                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="checkbox" id="model-gemini-pro" class="mr-3" checked>
-                                <span class="text-gray-800 font-medium flex-1">Gemini 3 Pro Image</span>
-                                <span class="text-green-600 text-xs font-bold">免费 🎉</span>
-                            </label>
-                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="checkbox" id="model-flux" class="mr-3" checked>
-                                <span class="text-gray-800 font-medium flex-1">Flux Pro</span>
-                                <span class="text-gray-600 text-xs">$0.05</span>
-                            </label>
-                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="checkbox" id="model-gpt5" class="mr-3" checked>
-                                <span class="text-gray-800 font-medium flex-1">GPT-5 Image</span>
-                                <span class="text-gray-600 text-xs">$0.04</span>
-                            </label>
-                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="checkbox" id="model-claude" class="mr-3" checked>
-                                <span class="text-gray-800 font-medium flex-1">Claude 3.5</span>
-                                <span class="text-gray-600 text-xs">$0.01</span>
-                            </label>
+                        <div class="space-y-2" id="modelSelectionList">
+                            <!-- 模型列表将在这里动态生成 -->
                         </div>
                     </div>
 
@@ -413,13 +384,58 @@
             }
         }
 
+        // 加载模型选择列表（按价格从低到高排序，默认勾选免费模型）
+        function loadModelSelectionList() {
+            const container = document.getElementById('modelSelectionList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // 获取所有模型并排序（按价格从低到高）
+            const sortedModels = Object.keys(MODEL_CONFIGS)
+                .filter(key => !key.startsWith('custom-')) // 排除自定义模型（它们会单独加载）
+                .map(key => ({
+                    key: key,
+                    ...MODEL_CONFIGS[key]
+                }))
+                .sort((a, b) => a.cost - b.cost); // 按价格从低到高排序
+            
+            // 生成模型选择项
+            sortedModels.forEach(model => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
+                
+                // 默认只勾选免费模型
+                const isChecked = model.cost === 0;
+                
+                const costDisplay = model.cost === 0 
+                    ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
+                    : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
+                
+                label.innerHTML = `
+                    <input type="checkbox" id="model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
+                    <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                    ${costDisplay}
+                `;
+                
+                // 添加事件监听
+                const checkbox = label.querySelector('input');
+                checkbox.addEventListener('change', updateCostEstimate);
+                
+                container.appendChild(label);
+            });
+            
+            // 更新成本估算
+            updateCostEstimate();
+        }
+
         // 页面加载时检查API Key
         window.onload = () => {
             if (!apiKey) {
                 showSettings();
             }
             updateCharCount();
-            updateCostEstimate();
+            loadModelSelectionList(); // 加载模型列表（按价格排序，默认勾选免费模型）
             loadCustomModels();
 
             // 恢复调试模式设置
@@ -469,7 +485,7 @@
             if (document.getElementById(`model-${key}`)) return;
             
             // 添加到UI
-            const container = document.querySelector('.space-y-2');
+            const container = document.getElementById('modelSelectionList') || document.querySelector('.space-y-2');
             const label = document.createElement('label');
             label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
             label.innerHTML = `
