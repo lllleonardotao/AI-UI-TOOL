@@ -719,22 +719,40 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 generateWithModel(modelKey, optimizedPrompt, platform)
             );
 
-            // 等待所有完成
-            await Promise.allSettled(promises);
-
-            // 保存历史记录
-            if (currentResults.length > 0) {
-                saveGenerationHistory(prompt, platform, selectedModels, currentResults);
+            try {
+                // 等待所有完成
+                await Promise.allSettled(promises);
+                
+                // 等待一小段时间，确保所有结果都已添加到 currentResults（包括成功和失败的）
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // 保存历史记录（使用用户输入的原始 prompt）
+                // 即使部分模型失败，只要有结果就保存
+                if (currentResults.length > 0) {
+                    saveGenerationHistory(prompt, platform, selectedModels, currentResults);
+                    debugLog('✅ 历史记录已保存，结果数量:', currentResults.length);
+                    console.log('📜 保存的历史记录:', {
+                        prompt: prompt.substring(0, 50),
+                        platform: platform,
+                        models: selectedModels,
+                        resultsCount: currentResults.length
+                    });
+                } else {
+                    console.warn('⚠️ 没有结果可保存到历史记录，currentResults 为空');
+                    debugLog('⚠️ 没有结果可保存到历史记录');
+                }
+            } catch (error) {
+                console.error('生成过程中出错:', error);
+            } finally {
+                // 确保按钮状态总是恢复
+                btn.disabled = false;
+                btn.textContent = '🚀 开始生成';
+                
+                // 隐藏进度
+                setTimeout(() => {
+                    document.getElementById('progressSection').classList.add('hidden');
+                }, 2000);
             }
-
-            // 恢复按钮
-            btn.disabled = false;
-            btn.textContent = '🚀 开始生成';
-
-            // 隐藏进度
-            setTimeout(() => {
-                document.getElementById('progressSection').classList.add('hidden');
-            }, 2000);
         }
 
         async function generateWithModel(modelKey, prompt, platform = 'mobile') {
