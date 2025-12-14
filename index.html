@@ -1446,6 +1446,28 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 const existingHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
                 console.log('🔵 现有历史记录数量:', existingHistory.length);
                 
+                // 处理图片数据：base64 图片太大，不保存完整数据到历史记录
+                // 只保存元数据和标记，完整图片需要重新生成
+                const processedResults = results.map(r => {
+                    const result = {
+                        modelName: r.modelName,
+                        cost: r.cost,
+                        isError: r.isError,
+                        errorMsg: r.errorMsg,
+                        hasImage: !!(r.imageUrl && !r.isError),
+                        imageUrl: null // 不保存完整图片数据，节省存储空间
+                    };
+                    
+                    // 如果是 HTTP URL，可以保存（通常很小）
+                    if (r.imageUrl && !r.isError && r.imageUrl.startsWith('http')) {
+                        result.imageUrl = r.imageUrl;
+                    }
+                    // base64 图片不保存，因为太大（可能几MB）
+                    // 用户可以通过"重新生成"功能重新获取图片
+                    
+                    return result;
+                });
+                
                 const historyItem = {
                     id: Date.now(),
                     timestamp: new Date().toISOString(),
@@ -1453,14 +1475,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     platform: platform,
                     platformText: platform === 'mobile' ? '手机端' : 'PC端',
                     selectedModels: selectedModels,
-                    results: results.map(r => ({
-                        modelName: r.modelName,
-                        imageUrl: r.imageUrl,
-                        cost: r.cost,
-                        isError: r.isError,
-                        errorMsg: r.errorMsg
-                    })),
-                    totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
+                    results: processedResults,
+                    totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0),
+                    // 标记：历史记录中的图片数据已压缩，完整数据需要重新生成
+                    note: '图片数据已压缩以节省存储空间'
                 };
                 
                 console.log('🔵 创建历史记录项:', {
@@ -1645,8 +1663,12 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         ${item.results.slice(0, 4).map((r, idx) => {
                             if (r.isError) {
                                 return `<div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-xs">❌</div>`;
-                            } else if (r.imageUrl) {
+                            } else if (r.imageUrl && r.imageUrl.startsWith('http')) {
+                                // HTTP URL 可以显示
                                 return `<img src="${r.imageUrl}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" data-image-url="${r.imageUrl.replace(/"/g, '&quot;')}">`;
+                            } else if (r.hasImage) {
+                                // 有图片但数据未保存，显示占位符
+                                return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs" title="图片数据未保存，点击重新生成">📷</div>`;
                             }
                             return '';
                         }).join('')}
@@ -1679,7 +1701,37 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             
             // 加载历史结果
             item.results.forEach(result => {
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                // 如果历史记录中没有完整图片数据，显示提示
+                if (result.hasImage && !result.imageUrl) {
+                    // 创建一个占位符卡片，提示用户需要重新生成
+                    const card = document.createElement('div');
+                    card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
+                    card.innerHTML = `
+                        <div class="aspect-square bg-blue-50 flex items-center justify-center p-6">
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">📷</div>
+                                <div class="text-blue-600 text-sm font-medium mb-2">图片数据未保存</div>
+                                <div class="text-gray-600 text-xs mb-3">为节省存储空间，历史记录中不包含完整图片</div>
+                                <button class="glass text-blue-600 font-medium text-sm px-4 py-2 rounded-lg hover:bg-white/30 transition">
+                                    🔄 重新生成
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-800 font-semibold">${result.modelName}</span>
+                                <span class="text-gray-600 text-sm">$${result.cost.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+                    card.querySelector('button').onclick = () => {
+                        closeHistory();
+                        regenerateFromHistory(historyId);
+                    };
+                    document.getElementById('resultsGrid').appendChild(card);
+                } else {
+                    addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                }
             });
             
             // 填充输入框
