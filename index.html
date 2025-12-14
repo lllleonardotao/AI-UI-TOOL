@@ -720,25 +720,36 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             );
 
             try {
-                // 等待所有完成
-                await Promise.allSettled(promises);
+                // 等待所有完成，并收集所有结果
+                const results = await Promise.allSettled(promises);
+                
+                // 从 Promise 结果中提取实际的结果数据
+                const allResults = results
+                    .filter(r => r.status === 'fulfilled' && r.value)
+                    .map(r => r.value);
                 
                 // 等待一小段时间，确保所有结果都已添加到 currentResults（包括成功和失败的）
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
                 // 保存历史记录（使用用户输入的原始 prompt）
-                // 即使部分模型失败，只要有结果就保存
-                if (currentResults.length > 0) {
-                    saveGenerationHistory(prompt, platform, selectedModels, currentResults);
-                    debugLog('✅ 历史记录已保存，结果数量:', currentResults.length);
+                // 优先使用 currentResults（因为它包含完整的图片数据），如果为空则使用收集的结果
+                const resultsToSave = currentResults.length > 0 ? currentResults : allResults;
+                
+                if (resultsToSave.length > 0) {
+                    saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
+                    debugLog('✅ 历史记录已保存，结果数量:', resultsToSave.length);
                     console.log('📜 保存的历史记录:', {
                         prompt: prompt.substring(0, 50),
                         platform: platform,
                         models: selectedModels,
-                        resultsCount: currentResults.length
+                        resultsCount: resultsToSave.length,
+                        currentResultsCount: currentResults.length,
+                        collectedResultsCount: allResults.length
                     });
                 } else {
-                    console.warn('⚠️ 没有结果可保存到历史记录，currentResults 为空');
+                    console.warn('⚠️ 没有结果可保存到历史记录');
+                    console.warn('  - currentResults.length:', currentResults.length);
+                    console.warn('  - allResults.length:', allResults.length);
                     debugLog('⚠️ 没有结果可保存到历史记录');
                 }
             } catch (error) {
@@ -775,14 +786,22 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
                 // 成功
                 updateProgressItem(modelKey, 'success');
-                addResultCard(config.name, imageUrl, config.cost, false);
+                const result = { modelName: config.name, imageUrl: imageUrl, cost: config.cost, isError: false, errorMsg: '' };
+                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                
+                // 返回结果，用于历史记录
+                return result;
                 
             } catch (error) {
                 console.error(`${config.name} 生成失败:`, error);
                 updateProgressItem(modelKey, 'error', error.message);
                 
                 // 添加错误卡片（不会消失）
-                addResultCard(config.name, '', config.cost, true, error.message);
+                const result = { modelName: config.name, imageUrl: '', cost: config.cost, isError: true, errorMsg: error.message };
+                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                
+                // 返回结果，用于历史记录
+                return result;
             }
         }
 
