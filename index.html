@@ -2442,12 +2442,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             
             // 根据平台调整预览尺寸
             if (platform === 'mobile') {
-                // 移动端：使用手机屏幕比例（9:16），最大宽度限制
+                // 移动端：使用 iPhone 16 屏幕比例（393x852，约19.5:9）
                 modalContent.className = 'relative flex flex-col';
-                modalContent.style.width = '100%';
-                modalContent.style.maxWidth = '375px'; // iPhone 标准宽度
-                modalContent.style.height = '667px'; // iPhone 标准高度
-                modalContent.style.maxHeight = '90vh';
+                modalContent.style.width = '393px'; // iPhone 16 宽度
+                modalContent.style.height = '852px'; // iPhone 16 高度
+                modalContent.style.maxWidth = '90vw'; // 在小屏幕上自适应
+                modalContent.style.maxHeight = '90vh'; // 在小屏幕上自适应
+                modalContent.style.aspectRatio = '393 / 852'; // 保持 iPhone 16 比例
             } else {
                 // PC端：使用桌面屏幕比例（16:9），限制最大尺寸
                 modalContent.className = 'relative flex flex-col';
