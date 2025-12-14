@@ -1470,7 +1470,26 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('代码生成API错误:', errorText);
-                    throw new Error(`代码生成失败: ${response.status} ${response.statusText}`);
+                    
+                    // 解析错误信息，提供更友好的错误提示
+                    let errorMessage = `代码生成失败: ${response.status}`;
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        if (errorData.error && errorData.error.message) {
+                            if (response.status === 429) {
+                                errorMessage = `代码生成失败: 429 (免费模型限流，请稍后重试或添加自己的API密钥)`;
+                            } else if (response.status === 402) {
+                                errorMessage = `代码生成失败: 402 (需要更多credits，请减少请求的token数量或添加credits)`;
+                            } else if (response.status === 404) {
+                                errorMessage = `代码生成失败: 404 (模型ID不存在，请检查模型名称)`;
+                            } else {
+                                errorMessage = `代码生成失败: ${response.status} - ${errorData.error.message}`;
+                            }
+                        }
+                    } catch (e) {
+                        // 如果解析失败，使用默认错误信息
+                    }
+                    throw new Error(errorMessage);
                 }
 
                 const data = await response.json();
