@@ -1369,6 +1369,86 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             return data.choices[0].message.content;
         }
 
+        /**
+         * 生成代码
+         */
+        async function generateCode(model, prompt, platform = 'mobile') {
+            const platformInfo = platform === 'mobile' 
+                ? 'mobile app (iOS/Android)' 
+                : 'desktop web application';
+            
+            // 构建包含参考图片的 prompt
+            let codePrompt = `${prompt}
+
+请生成完整的、可直接运行的 ${platformInfo} UI 界面代码。
+
+要求：
+1. 生成完整的 HTML、CSS 和 JavaScript 代码
+2. 代码应该是一个完整的、可独立运行的 HTML 文件
+3. 使用现代 CSS（Flexbox/Grid）实现布局
+4. 确保代码可以直接在浏览器中运行
+5. 如果是移动端，使用响应式设计，适配移动屏幕
+6. 如果是桌面端，使用适合桌面屏幕的布局
+7. 代码要包含所有必要的样式和交互功能
+8. 使用内联样式或 <style> 标签，确保代码可以独立运行
+
+请直接输出完整的 HTML 代码，不要包含任何解释文字，只输出代码。`;
+
+            // 构建消息内容
+            let content;
+            if (referenceImages.length > 0) {
+                // 包含参考图片
+                content = [
+                    {
+                        type: 'text',
+                        text: codePrompt
+                    },
+                    ...referenceImages.map(img => ({
+                        type: 'image_url',
+                        image_url: {
+                            url: img.data
+                        }
+                    }))
+                ];
+            } else {
+                content = codePrompt;
+            }
+
+            const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'AI UI Design Comparator'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: content
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('代码生成失败');
+            }
+
+            const data = await response.json();
+            let code = data.choices[0].message.content;
+            
+            // 提取代码块（如果返回的是 markdown 格式）
+            const codeBlockMatch = code.match(/```(?:html|css|javascript|js)?\n([\s\S]*?)```/);
+            if (codeBlockMatch) {
+                code = codeBlockMatch[1];
+            }
+            
+            return code;
+        }
+
         // 进度相关
         function addProgressItem(modelKey, status) {
             const config = MODEL_CONFIGS[modelKey];
