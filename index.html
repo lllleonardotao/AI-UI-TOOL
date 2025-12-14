@@ -105,8 +105,8 @@
                         <div class="relative">
                         <textarea 
                             id="promptInput"
-                            rows="6"
-                                class="w-full p-4 pr-16 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                            rows="4"
+                                class="w-full p-4 pr-24 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
                             
@@ -641,9 +641,10 @@
             // 获取设置中保存的可用模型列表（主页面只显示这些模型）
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
             
-            // 如果没有保存的模型，默认使用所有免费模型
+            // 如果没有保存的模型，默认使用这几个代码生成模型
+            const defaultModels = ['qwen-coder', 'deepseek-code', 'gpt4o-code', 'claude-code', 'gpt4-code'];
             const availableModels = savedSelected.length === 0 
-                ? Object.keys(MODEL_CONFIGS).filter(key => MODEL_CONFIGS[key].cost === 0)
+                ? defaultModels.filter(key => MODEL_CONFIGS[key]) // 确保模型存在
                 : savedSelected.filter(key => MODEL_CONFIGS[key]); // 确保模型存在
             
             if (availableModels.length === 0) {
@@ -1819,10 +1820,7 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                                 👁️ 查看代码
                             </button>
                             <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                🔍 预览大图
-                            </button>
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载代码
+                                ⬇️ 下载图片
                             </button>
                         </div>
                     `;
@@ -1833,19 +1831,54 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                         showCodeModal(codeContent, modelName);
                     };
                     
-                    // 预览大图按钮
-                    infoDiv.querySelectorAll('button')[1].onclick = (e) => {
+                    // 下载图片按钮（从代码预览生成截图）
+                    infoDiv.querySelectorAll('button')[1].onclick = async (e) => {
                         e.stopPropagation();
-                        // 获取当前平台信息
-                        const platformRadio = document.querySelector('input[name="platform"]:checked');
-                        const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
-                        showCodePreview(codeContent, modelName, currentPlatform);
-                    };
-                    
-                    // 下载代码按钮
-                    infoDiv.querySelectorAll('button')[2].onclick = (e) => {
-                        e.stopPropagation();
-                        downloadCode(codeContent, modelName);
+                        // 从iframe生成图片
+                        try {
+                            const iframe = previewArea.querySelector('iframe');
+                            if (iframe && iframe.contentWindow) {
+                                // 使用html2canvas或直接截图iframe
+                                // 这里使用canvas截图iframe内容
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                
+                                // 设置canvas尺寸
+                                canvas.width = iframe.offsetWidth;
+                                canvas.height = iframe.offsetHeight;
+                                
+                                // 尝试使用html2canvas库，如果没有则提示用户
+                                if (typeof html2canvas !== 'undefined') {
+                                    html2canvas(iframe.contentDocument.body).then(canvas => {
+                                        canvas.toBlob(blob => {
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `${modelName}_preview.png`;
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                        });
+                                    });
+                                } else {
+                                    // 如果没有html2canvas，使用简单的方法：打开预览然后提示用户截图
+                                    const platformRadio = document.querySelector('input[name="platform"]:checked');
+                                    const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                                    showCodePreview(codeContent, modelName, currentPlatform);
+                                    setTimeout(() => {
+                                        alert('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存');
+                                    }, 500);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('截图失败:', error);
+                            // 如果截图失败，打开预览让用户手动截图
+                            const platformRadio = document.querySelector('input[name="platform"]:checked');
+                            const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                            showCodePreview(codeContent, modelName, currentPlatform);
+                            setTimeout(() => {
+                                alert('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存');
+                            }, 500);
+                        }
                     };
                     
                     codeContainer.appendChild(infoDiv);
@@ -1897,22 +1930,15 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                         </div>
                         <div class="flex gap-2">
                             <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载
-                            </button>
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                🔍 数据
+                                ⬇️ 下载图片
                             </button>
                         </div>
                     `;
                     
-                    const buttons = infoDiv.querySelectorAll('button');
-                    buttons[0].onclick = (e) => {
+                    const button = infoDiv.querySelector('button');
+                    button.onclick = (e) => {
                         e.stopPropagation();
                         downloadImage(imageUrl, modelName);
-                    };
-                    buttons[1].onclick = (e) => {
-                        e.stopPropagation();
-                        showRawData(modelName);
                     };
                     
                     card.appendChild(imgContainer);
