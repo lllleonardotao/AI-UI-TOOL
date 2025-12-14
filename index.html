@@ -108,21 +108,6 @@
                         </div>
                     </div>
 
-                    <!-- Platform Selection -->
-                    <div class="mb-4">
-                        <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
-                        <div class="flex gap-2">
-                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="radio" name="platform" value="mobile" class="mr-2" checked>
-                                <span class="text-gray-800 font-medium">📱 手机端</span>
-                            </label>
-                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="radio" name="platform" value="desktop" class="mr-2">
-                                <span class="text-gray-800 font-medium">💻 PC端</span>
-                            </label>
-                        </div>
-                    </div>
-
                     <!-- Model Selection -->
                     <div class="mb-4">
                         <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
@@ -342,10 +327,7 @@
         }
 
         // 页面加载时检查API Key
-        window.onload = function() {
-            console.log('[OK] AI UI Design Comparator v2.1 loaded');
-            console.log('[OK] JavaScript is running');
-
+        window.onload = () => {
             if (!apiKey) {
                 showSettings();
             }
@@ -358,9 +340,6 @@
             if (debugCheckbox) {
                 debugCheckbox.checked = debugMode;
             }
-
-            // 在页面标题添加版本号
-            document.title = 'AI UI Design Comparator v2.1';
         };
 
         // 自定义模型管理
@@ -583,22 +562,14 @@
             currentResults = [];
             document.getElementById('resultsGrid').innerHTML = '';
 
-            // 获取平台类型
-            const platformRadio = document.querySelector('input[name="platform"]:checked');
-            const platform = platformRadio ? platformRadio.value : 'mobile';
-            const isMobile = platform === 'mobile';
-
             // 优化Prompt（加入UI设计约束）
-            const platformText = isMobile ? 'mobile app (iOS/Android)' : 'desktop web application';
-            const platformTitle = isMobile ? 'mobile app UI design' : 'desktop web UI design';
-
-            const optimizedPrompt = `Create a clean, modern ${platformTitle}.
+            const optimizedPrompt = `Create a clean, modern mobile app UI design.
 
 User requirements: ${prompt}
 
 Design constraints:
 - Style: flat design, minimalist, professional interface
-- Platform: ${platformText}
+- Platform: mobile app (iOS/Android)
 - Layout: clear visual hierarchy, proper spacing
 - Elements: realistic UI components (buttons, inputs, cards)
 - Colors: harmonious color scheme
@@ -771,19 +742,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 }
             }
 
-            // 方法2: content 是字符串，可能包含URL、markdown或HTML代码
+            // 方法2: content 是字符串，可能包含URL或markdown
             if (typeof message.content === 'string') {
                 debugLog('🔍 Checking string content');
-
-                // 检查是否是HTML代码
-                if (message.content.includes('<!DOCTYPE') ||
-                    message.content.includes('<html') ||
-                    (message.content.includes('<') && message.content.includes('>'))) {
-                    debugLog('✅ Found HTML code in content');
-                    return { type: 'html', content: message.content };
-                }
-
-                // 尝试提取图片URL
                 const url = extractImageUrl(message.content);
                 if (url) {
                     debugLog('✅ Extracted URL from string');
@@ -946,66 +907,16 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 card.appendChild(infoDiv);
             } else {
                 console.log('📦 Creating result card for:', modelName);
-                console.log('📦 Data type:', typeof imageUrl);
-
-                // 检查是否是HTML代码
-                const isHtmlCode = imageUrl && typeof imageUrl === 'object' && imageUrl.type === 'html';
-
-                if (isHtmlCode) {
-                    console.log('📦 Detected HTML code');
-                    // 创建HTML代码预览卡片
-                    const htmlContainer = document.createElement('div');
-                    htmlContainer.className = 'aspect-square bg-white relative overflow-hidden';
-
-                    const iframe = document.createElement('iframe');
-                    iframe.className = 'w-full h-full border-0';
-                    iframe.srcdoc = imageUrl.content;
-                    iframe.sandbox = 'allow-scripts';
-
-                    htmlContainer.appendChild(iframe);
-
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-4';
-                    infoDiv.innerHTML = `
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-800 font-semibold">${modelName}</span>
-                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载HTML
-                            </button>
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                📋 复制代码
-                            </button>
-                        </div>
-                    `;
-
-                    const buttons = infoDiv.querySelectorAll('button');
-                    buttons[0].onclick = (e) => {
-                        e.stopPropagation();
-                        downloadHtml(imageUrl.content, modelName);
-                    };
-                    buttons[1].onclick = (e) => {
-                        e.stopPropagation();
-                        copyHtmlCode(imageUrl.content);
-                    };
-
-                    card.appendChild(htmlContainer);
-                    card.appendChild(infoDiv);
-
-                    card.style.cursor = 'pointer';
-                    card.onclick = () => showHtmlModal(imageUrl.content);
-                } else {
-                    console.log('📦 ImageURL length:', imageUrl ? imageUrl.length : 0);
-                    console.log('📦 ImageURL preview:', imageUrl ? imageUrl.substring(0, 100) : 'null');
-
-                    // 检查是否是有效的图片数据
-                    const isBase64 = imageUrl && imageUrl.startsWith('data:image');
-                    const isHttpUrl = imageUrl && imageUrl.startsWith('http');
-
-                    console.log('📦 isBase64:', isBase64);
-                    console.log('📦 isHttpUrl:', isHttpUrl);
+                console.log('📦 ImageURL type:', typeof imageUrl);
+                console.log('📦 ImageURL length:', imageUrl ? imageUrl.length : 0);
+                console.log('📦 ImageURL preview:', imageUrl ? imageUrl.substring(0, 100) : 'null');
+                
+                // 检查是否是有效的图片数据
+                const isBase64 = imageUrl && imageUrl.startsWith('data:image');
+                const isHttpUrl = imageUrl && imageUrl.startsWith('http');
+                
+                console.log('📦 isBase64:', isBase64);
+                console.log('📦 isHttpUrl:', isHttpUrl);
                 
                 if (isBase64 || isHttpUrl) {
                     // 使用JavaScript创建图片元素，避免HTML字符串问题
@@ -1163,23 +1074,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 alert('请输入UI设计需求');
                 return;
             }
-
-            // 获取平台类型
-            const platformRadio = document.querySelector('input[name="platform"]:checked');
-            const platform = platformRadio ? platformRadio.value : 'mobile';
-            const isMobile = platform === 'mobile';
-
+            
             // 重新生成
-            const platformText = isMobile ? 'mobile app (iOS/Android)' : 'desktop web application';
-            const platformTitle = isMobile ? 'mobile app UI design' : 'desktop web UI design';
-
-            const optimizedPrompt = `Create a clean, modern ${platformTitle}.
+            const optimizedPrompt = `Create a clean, modern mobile app UI design.
 
 User requirements: ${prompt}
 
 Design constraints:
 - Style: flat design, minimalist, professional interface
-- Platform: ${platformText}
+- Platform: mobile app (iOS/Android)
 - Layout: clear visual hierarchy, proper spacing
 - Elements: realistic UI components (buttons, inputs, cards)
 - Colors: harmonious color scheme
@@ -1206,7 +1109,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 const response = await fetch(url);
                 const blob = await response.blob();
                 const downloadUrl = URL.createObjectURL(blob);
-
+                
                 const a = document.createElement('a');
                 a.href = downloadUrl;
                 a.download = `${modelName}_${Date.now()}.png`;
@@ -1218,59 +1121,6 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 console.error('下载失败:', error);
                 alert('⚠️ 下载失败，请右键保存图片');
             }
-        }
-
-        // HTML代码相关函数
-        function downloadHtml(htmlContent, modelName) {
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${modelName}_${Date.now()}.html`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function copyHtmlCode(htmlContent) {
-            navigator.clipboard.writeText(htmlContent).then(() => {
-                alert('✅ HTML代码已复制到剪贴板');
-            }).catch(err => {
-                console.error('复制失败:', err);
-                alert('⚠️ 复制失败，请手动复制');
-            });
-        }
-
-        function showHtmlModal(htmlContent) {
-            // 创建全屏模态框显示HTML预览
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50';
-            modal.onclick = (e) => {
-                if (e.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            };
-
-            const container = document.createElement('div');
-            container.className = 'bg-white rounded-2xl w-full max-w-6xl h-[90vh] overflow-hidden flex flex-col';
-
-            const header = document.createElement('div');
-            header.className = 'p-4 border-b flex justify-between items-center';
-            header.innerHTML = `
-                <h3 class="text-lg font-bold text-gray-800">HTML预览</h3>
-                <button class="text-gray-600 hover:text-gray-800" onclick="this.closest('.fixed').remove()">✕</button>
-            `;
-
-            const iframe = document.createElement('iframe');
-            iframe.className = 'w-full flex-1 border-0';
-            iframe.srcdoc = htmlContent;
-            iframe.sandbox = 'allow-scripts';
-
-            container.appendChild(header);
-            container.appendChild(iframe);
-            modal.appendChild(container);
-            document.body.appendChild(modal);
         }
     </script>
 </body>
