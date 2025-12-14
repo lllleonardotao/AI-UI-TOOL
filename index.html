@@ -1604,7 +1604,10 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                     iframe.onload = () => {
                         try {
                             iframe.contentDocument.body.onclick = () => {
-                                showCodePreview(codeContent, modelName);
+                                // 获取当前平台信息
+                                const platformRadio = document.querySelector('input[name="platform"]:checked');
+                                const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                                showCodePreview(codeContent, modelName, currentPlatform);
                             };
                         } catch (e) {
                             // 跨域限制，忽略
