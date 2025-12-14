@@ -21,3 +21,6 @@ npm-debug.log*
 .env
 .env.local
 
+# 排除其他项目目录（只上传 AI_UI_Comparator）
+ai-image-platform/
+
