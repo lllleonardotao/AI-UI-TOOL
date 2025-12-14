@@ -2486,22 +2486,29 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             
             const modalContent = document.createElement('div');
             
-            // 根据平台调整预览尺寸
+            // 根据平台调整预览尺寸，支持拖拽调整大小
             if (platform === 'mobile') {
-                // 移动端：使用 iPhone 16 屏幕比例（393x852，约19.5:9）
+                // 移动端：使用 iPhone 16 屏幕比例，增加高度，支持调整
                 modalContent.className = 'relative flex flex-col';
                 modalContent.style.width = '393px'; // iPhone 16 宽度
-                modalContent.style.height = '852px'; // iPhone 16 高度
+                modalContent.style.height = '900px'; // 增加高度，从852px增加到900px
+                modalContent.style.minWidth = '300px'; // 最小宽度，支持调整
+                modalContent.style.minHeight = '600px'; // 最小高度，支持调整
                 modalContent.style.maxWidth = '90vw'; // 在小屏幕上自适应
-                modalContent.style.maxHeight = '90vh'; // 在小屏幕上自适应
-                modalContent.style.aspectRatio = '393 / 852'; // 保持 iPhone 16 比例
+                modalContent.style.maxHeight = '95vh'; // 增加最大高度，从90vh到95vh
+                modalContent.style.resize = 'both'; // 允许双向调整大小
+                modalContent.style.overflow = 'auto'; // 允许滚动
             } else {
-                // PC端：使用桌面屏幕比例（16:9），限制最大尺寸
+                // PC端：使用桌面屏幕比例，增加高度，支持调整
                 modalContent.className = 'relative flex flex-col';
                 modalContent.style.width = '90vw';
-                modalContent.style.maxWidth = '1200px';
-                modalContent.style.height = '80vh';
-                modalContent.style.maxHeight = '800px';
+                modalContent.style.maxWidth = '1400px'; // 增加最大宽度
+                modalContent.style.height = '85vh'; // 增加高度，从80vh到85vh
+                modalContent.style.minWidth = '600px'; // 最小宽度
+                modalContent.style.minHeight = '500px'; // 最小高度
+                modalContent.style.maxHeight = '90vh'; // 增加最大高度
+                modalContent.style.resize = 'both'; // 允许双向调整大小
+                modalContent.style.overflow = 'auto'; // 允许滚动
             }
             
             const header = document.createElement('div');
