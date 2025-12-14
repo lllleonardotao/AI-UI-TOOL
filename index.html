@@ -2403,6 +2403,68 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 }, 300);
             }, duration);
         }
+
+        // 显示代码预览大图（全屏预览）
+        function showCodePreview(codeContent, modelName) {
+            // 创建全屏预览模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50';
+            modal.innerHTML = `
+                <div class="relative w-full h-full flex flex-col">
+                    <div class="flex items-center justify-between mb-4 bg-gray-900/50 p-4 rounded-t-lg">
+                        <h2 class="text-xl font-bold text-white">🔍 ${modelName} - 预览</h2>
+                        <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-300 text-3xl font-bold">&times;</button>
+                    </div>
+                    <div class="flex-1 bg-white rounded-lg overflow-hidden shadow-2xl">
+                        <iframe 
+                            class="w-full h-full border-0" 
+                            srcdoc="${escapeHtml(codeContent)}"
+                        ></iframe>
+                    </div>
+                    <div class="mt-4 flex gap-3 bg-gray-900/50 p-4 rounded-b-lg">
+                        <button onclick="copyCodeToClipboardFromPreview()" class="flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                            📋 复制代码
+                        </button>
+                        <button onclick="downloadCodeFromPreview()" class="flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                            ⬇️ 下载代码
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 存储代码内容到全局变量
+            window.currentPreviewCodeContent = codeContent;
+            window.currentPreviewCodeModelName = modelName;
+            
+            // 复制代码函数
+            window.copyCodeToClipboardFromPreview = () => {
+                navigator.clipboard.writeText(codeContent).then(() => {
+                    showToast('✅ 代码已复制到剪贴板');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请查看Console');
+                });
+            };
+            
+            // 下载代码函数
+            window.downloadCodeFromPreview = () => {
+                downloadCode(codeContent, modelName);
+            };
+            
+            document.body.appendChild(modal);
+            
+            // 按 ESC 键关闭
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+        }
     </script>
 </body>
 </html>
