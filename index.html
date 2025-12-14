@@ -794,33 +794,44 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     };
                 });
                 
-                // 确保结果数量与选中的模型数量一致
-                if (resultsToSave.length === selectedModels.length && resultsToSave.length > 0) {
-                    saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
-                    debugLog('✅ 历史记录已保存，结果数量:', resultsToSave.length);
-                    console.log('📜 保存的历史记录:', {
+                // 保存历史记录（无论结果数量是否完全匹配，只要有结果就保存）
+                if (resultsToSave.length > 0) {
+                    console.log('📜 准备保存历史记录:', {
                         prompt: prompt.substring(0, 50),
                         platform: platform,
-                        models: selectedModels,
-                        resultsCount: resultsToSave.length,
+                        selectedModelsCount: selectedModels.length,
+                        resultsToSaveCount: resultsToSave.length,
                         currentResultsCount: currentResults.length,
                         collectedResultsCount: allResults.length,
-                        mergedResultsCount: resultsMap.size
+                        mergedResultsCount: resultsMap.size,
+                        resultsToSave: resultsToSave.map(r => ({ name: r.modelName, hasImage: !!r.imageUrl, isError: r.isError }))
                     });
-                } else {
-                    console.warn('⚠️ 结果数量不匹配，无法保存历史记录');
-                    console.warn('  - 选中模型数量:', selectedModels.length);
-                    console.warn('  - currentResults.length:', currentResults.length);
-                    console.warn('  - allResults.length:', allResults.length);
-                    console.warn('  - resultsToSave.length:', resultsToSave.length);
                     
-                    // 即使数量不匹配，也尝试保存已有的结果
-                    if (resultsToSave.length > 0) {
-                        console.warn('  - 尝试保存部分结果');
-                        saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
-                    } else {
-                        debugLog('⚠️ 没有结果可保存到历史记录');
-                    }
+                    saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
+                    
+                    debugLog('✅ 历史记录已保存，结果数量:', resultsToSave.length);
+                    console.log('✅ 历史记录保存成功');
+                    
+                    // 验证保存是否成功
+                    setTimeout(() => {
+                        const savedHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
+                        console.log('🔍 验证保存结果 - 历史记录总数:', savedHistory.length);
+                        if (savedHistory.length > 0) {
+                            console.log('🔍 最新一条历史记录:', {
+                                id: savedHistory[0].id,
+                                prompt: savedHistory[0].prompt.substring(0, 30),
+                                resultsCount: savedHistory[0].results.length
+                            });
+                        }
+                    }, 100);
+                } else {
+                    console.error('❌ 没有结果可保存到历史记录');
+                    console.error('  - 选中模型数量:', selectedModels.length);
+                    console.error('  - currentResults.length:', currentResults.length);
+                    console.error('  - allResults.length:', allResults.length);
+                    console.error('  - resultsToSave.length:', resultsToSave.length);
+                    console.error('  - resultsMap.size:', resultsMap.size);
+                    debugLog('⚠️ 没有结果可保存到历史记录');
                 }
             } catch (error) {
                 console.error('生成过程中出错:', error);
@@ -1422,9 +1433,18 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
         // 历史记录相关函数
         function saveGenerationHistory(prompt, platform, selectedModels, results) {
+            console.log('🔵 saveGenerationHistory 被调用:', {
+                promptLength: prompt.length,
+                platform: platform,
+                selectedModelsCount: selectedModels.length,
+                resultsCount: results.length,
+                results: results.map(r => ({ name: r.modelName, hasImage: !!r.imageUrl, isError: r.isError }))
+            });
+            
             try {
                 // 每次保存前都从 localStorage 重新加载，确保不会覆盖其他记录
                 const existingHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
+                console.log('🔵 现有历史记录数量:', existingHistory.length);
                 
                 const historyItem = {
                     id: Date.now(),
@@ -1443,6 +1463,12 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
                 };
                 
+                console.log('🔵 创建历史记录项:', {
+                    id: historyItem.id,
+                    resultsCount: historyItem.results.length,
+                    results: historyItem.results.map(r => r.modelName)
+                });
+                
                 // 添加到历史记录数组的开头（最新的在前面）
                 existingHistory.unshift(historyItem);
                 
@@ -1457,14 +1483,23 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 // 保存到 localStorage
                 localStorage.setItem('generation_history', JSON.stringify(finalHistory));
                 
+                // 验证保存是否成功
+                const verifyHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
                 console.log('✅ 历史记录已保存:', {
                     id: historyItem.id,
                     prompt: prompt.substring(0, 30) + '...',
                     resultsCount: results.length,
-                    totalHistoryCount: finalHistory.length
+                    totalHistoryCount: finalHistory.length,
+                    verifyCount: verifyHistory.length,
+                    saved: verifyHistory.length > 0 && verifyHistory[0].id === historyItem.id
                 });
+                
+                if (verifyHistory.length === 0 || verifyHistory[0].id !== historyItem.id) {
+                    console.error('❌ 保存验证失败！历史记录可能未正确保存');
+                }
             } catch (error) {
                 console.error('❌ 保存历史记录失败:', error);
+                console.error('错误堆栈:', error.stack);
                 console.error('错误详情:', {
                     prompt: prompt.substring(0, 30),
                     resultsLength: results.length,
