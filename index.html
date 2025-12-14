@@ -1063,8 +1063,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 updateProgressItem(modelKey, 'error', error.message);
                 
                 // 添加错误卡片（不会消失）
-                const result = { modelName: config.name, imageUrl: '', cost: config.cost, isError: true, errorMsg: error.message };
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                const result = { modelName: config.name, imageUrl: '', cost: config.cost, isError: true, errorMsg: error.message, codeContent: null };
+                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg, result.codeContent);
                 
                 // 返回结果，用于历史记录
                 return result;
