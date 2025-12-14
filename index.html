@@ -1025,6 +1025,9 @@
                 alert('⚠️ 请至少选择一个模型');
                 return;
             }
+            
+            // 保存当前选择，用于下次加载时恢复
+            localStorage.setItem('last_generation_models', JSON.stringify(selectedModels));
 
             // 禁用按钮
             const btn = document.getElementById('generateBtn');
