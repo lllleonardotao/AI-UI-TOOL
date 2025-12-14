@@ -437,7 +437,7 @@
             },
             'deepseek-code': {
                 name: 'DeepSeek Coder (代码)',
-                model: 'deepseek/deepseek-coder',
+                model: 'deepseek/deepseek-chat',
                 cost: 0.0001,
                 type: 'code'
             },
@@ -1591,9 +1591,20 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                     previewArea.appendChild(iframe);
                     
                     // 点击预览区域可以查看大图
+                    previewArea.style.cursor = 'pointer';
                     previewArea.onclick = (e) => {
-                        if (e.target === previewArea || e.target === iframe) {
-                            showCodePreview(codeContent, modelName);
+                        e.stopPropagation();
+                        showCodePreview(codeContent, modelName);
+                    };
+                    
+                    // iframe 内部点击也触发（通过父元素）
+                    iframe.onload = () => {
+                        try {
+                            iframe.contentDocument.body.onclick = () => {
+                                showCodePreview(codeContent, modelName);
+                            };
+                        } catch (e) {
+                            // 跨域限制，忽略
                         }
                     };
                     
@@ -2404,23 +2415,32 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }, duration);
         }
 
+        // HTML 转义函数
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // 显示代码预览大图（全屏预览）
         function showCodePreview(codeContent, modelName) {
             // 创建全屏预览模态框
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50';
-            modal.innerHTML = `
-                <div class="relative w-full h-full flex flex-col">
-                    <div class="flex items-center justify-between mb-4 bg-gray-900/50 p-4 rounded-t-lg">
-                        <h2 class="text-xl font-bold text-white">🔍 ${modelName} - 预览</h2>
-                        <button onclick="this.closest('.fixed').remove()" class="text-white hover:text-gray-300 text-3xl font-bold">&times;</button>
-                    </div>
-                    <div class="flex-1 bg-white rounded-lg overflow-hidden shadow-2xl">
-                        <iframe 
-                            class="w-full h-full border-0" 
-                            srcdoc="${escapeHtml(codeContent)}"
-                        ></iframe>
-                    </div>
+            
+            const iframe = document.createElement('iframe');
+            iframe.className = 'w-full h-full border-0 bg-white rounded-lg';
+            iframe.srcdoc = codeContent;
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'relative w-full h-full flex flex-col';
+            modalContent.innerHTML = `
+                <div class="flex items-center justify-between mb-4 bg-gray-900/50 p-4 rounded-t-lg">
+                    <h2 class="text-xl font-bold text-white">🔍 ${modelName} - 预览</h2>
+                    <button class="close-preview-btn text-white hover:text-gray-300 text-3xl font-bold">&times;</button>
+                </div>
+                <div class="flex-1 bg-white rounded-lg overflow-hidden shadow-2xl" id="preview-iframe-container"></div>
                     <div class="mt-4 flex gap-3 bg-gray-900/50 p-4 rounded-b-lg">
                         <button onclick="copyCodeToClipboardFromPreview()" class="flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
                             📋 复制代码
