@@ -438,48 +438,81 @@
         let customModels = JSON.parse(localStorage.getItem('custom_models') || '[]');
         let debugMode = localStorage.getItem('debug_mode') === 'true';
         let generationHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
-        let referenceImage = null; // 存储参考图片的 base64 数据
+        let referenceImages = []; // 存储参考图片的数组，每个元素包含 {id, data}
 
-        // 处理图片上传
+        // 处理图片上传（支持多张）
         function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
             
-            // 检查文件类型
-            if (!file.type.startsWith('image/')) {
-                alert('⚠️ 请上传图片文件');
-                return;
-            }
-            
-            // 检查文件大小（限制 10MB）
-            if (file.size > 10 * 1024 * 1024) {
-                alert('⚠️ 图片文件大小不能超过 10MB');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                referenceImage = e.target.result; // base64 数据
-                const preview = document.getElementById('referenceImagePreview');
-                const display = document.getElementById('referenceImageDisplay');
+            files.forEach(file => {
+                // 检查文件类型
+                if (!file.type.startsWith('image/')) {
+                    alert(`⚠️ ${file.name} 不是图片文件`);
+                    return;
+                }
                 
-                display.src = referenceImage;
-                preview.classList.remove('hidden');
+                // 检查文件大小（限制 10MB）
+                if (file.size > 10 * 1024 * 1024) {
+                    alert(`⚠️ ${file.name} 文件大小超过 10MB`);
+                    return;
+                }
                 
-                console.log('✅ 参考图片已上传');
-            };
-            reader.onerror = () => {
-                alert('⚠️ 图片读取失败');
-            };
-            reader.readAsDataURL(file);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageId = Date.now() + Math.random();
+                    const imageData = {
+                        id: imageId,
+                        data: e.target.result // base64 数据
+                    };
+                    
+                    referenceImages.push(imageData);
+                    renderReferenceImages();
+                    
+                    console.log('✅ 参考图片已上传:', imageId);
+                };
+                reader.onerror = () => {
+                    alert(`⚠️ ${file.name} 读取失败`);
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            // 清空 input，允许重复选择同一文件
+            event.target.value = '';
         }
 
-        // 移除参考图片
-        function removeReferenceImage() {
-            referenceImage = null;
-            document.getElementById('referenceImagePreview').classList.add('hidden');
-            document.getElementById('referenceImageInput').value = '';
-            console.log('🗑️ 参考图片已移除');
+        // 渲染参考图片列表
+        function renderReferenceImages() {
+            const container = document.getElementById('referenceImagesContainer');
+            container.innerHTML = '';
+            
+            referenceImages.forEach((image, index) => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'relative group';
+                imageItem.innerHTML = `
+                    <img 
+                        src="${image.data}" 
+                        alt="参考图片 ${index + 1}" 
+                        class="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:border-purple-500 transition"
+                        onclick="showImageModal('${image.data}')"
+                    >
+                    <button 
+                        onclick="removeReferenceImage(${image.id})"
+                        class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition opacity-0 group-hover:opacity-100 text-xs"
+                        title="删除图片"
+                    >
+                        ×
+                    </button>
+                `;
+                container.appendChild(imageItem);
+            });
+        }
+
+        // 移除指定参考图片
+        function removeReferenceImage(imageId) {
+            referenceImages = referenceImages.filter(img => img.id !== imageId);
+            renderReferenceImages();
+            console.log('🗑️ 参考图片已移除:', imageId);
         }
 
         // 调试日志函数
@@ -1022,10 +1055,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 if (!prompt.includes('IMPORTANT: This must be')) {
                     const newPrompt = `${prompt}${platformEmphasis}`;
-                    if (referenceImage) {
+                    if (referenceImages.length > 0) {
                         requestBody.messages[0].content = [
                             { type: 'text', text: newPrompt },
-                            { type: 'image_url', image_url: { url: referenceImage } }
+                            ...referenceImages.map(img => ({
+                                type: 'image_url',
+                                image_url: { url: img.data }
+                            }))
                         ];
                     } else {
                         requestBody.messages[0].content = newPrompt;
