@@ -763,13 +763,39 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     .map(r => r.value);
                 
                 // 等待一小段时间，确保所有结果都已添加到 currentResults（包括成功和失败的）
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 800));
                 
-                // 保存历史记录（使用用户输入的原始 prompt）
-                // 优先使用 currentResults（因为它包含完整的图片数据），如果为空则使用收集的结果
-                const resultsToSave = currentResults.length > 0 ? currentResults : allResults;
+                // 合并两个结果源，确保所有结果都被保存
+                // 创建一个 Map 来去重，优先使用 currentResults（包含完整图片数据）
+                const resultsMap = new Map();
                 
-                if (resultsToSave.length > 0) {
+                // 先添加 currentResults（优先，包含完整数据）
+                currentResults.forEach(result => {
+                    resultsMap.set(result.modelName, result);
+                });
+                
+                // 再添加 allResults 中 currentResults 没有的结果
+                allResults.forEach(result => {
+                    if (!resultsMap.has(result.modelName)) {
+                        resultsMap.set(result.modelName, result);
+                    }
+                });
+                
+                // 转换为数组，按 selectedModels 的顺序排序
+                const resultsToSave = selectedModels.map(modelKey => {
+                    const config = MODEL_CONFIGS[modelKey];
+                    const modelName = config ? config.name : modelKey;
+                    return resultsMap.get(modelName) || {
+                        modelName: modelName,
+                        imageUrl: '',
+                        cost: config ? config.cost : 0,
+                        isError: true,
+                        errorMsg: '结果未找到'
+                    };
+                });
+                
+                // 确保结果数量与选中的模型数量一致
+                if (resultsToSave.length === selectedModels.length && resultsToSave.length > 0) {
                     saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
                     debugLog('✅ 历史记录已保存，结果数量:', resultsToSave.length);
                     console.log('📜 保存的历史记录:', {
@@ -778,13 +804,23 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         models: selectedModels,
                         resultsCount: resultsToSave.length,
                         currentResultsCount: currentResults.length,
-                        collectedResultsCount: allResults.length
+                        collectedResultsCount: allResults.length,
+                        mergedResultsCount: resultsMap.size
                     });
                 } else {
-                    console.warn('⚠️ 没有结果可保存到历史记录');
+                    console.warn('⚠️ 结果数量不匹配，无法保存历史记录');
+                    console.warn('  - 选中模型数量:', selectedModels.length);
                     console.warn('  - currentResults.length:', currentResults.length);
                     console.warn('  - allResults.length:', allResults.length);
-                    debugLog('⚠️ 没有结果可保存到历史记录');
+                    console.warn('  - resultsToSave.length:', resultsToSave.length);
+                    
+                    // 即使数量不匹配，也尝试保存已有的结果
+                    if (resultsToSave.length > 0) {
+                        console.warn('  - 尝试保存部分结果');
+                        saveGenerationHistory(prompt, platform, selectedModels, resultsToSave);
+                    } else {
+                        debugLog('⚠️ 没有结果可保存到历史记录');
+                    }
                 }
             } catch (error) {
                 console.error('生成过程中出错:', error);
