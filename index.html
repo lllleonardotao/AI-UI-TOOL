@@ -1414,6 +1414,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 content = codePrompt;
             }
 
+            // 设置超时时间（60秒）
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            
             const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
                 method: 'POST',
                 headers: {
@@ -1430,8 +1434,11 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             content: content
                         }
                     ]
-                })
+                }),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 throw new Error('代码生成失败');
@@ -1531,13 +1538,16 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 // 如果是代码内容
                 if (codeContent) {
-                    // 代码预览卡片
+                    // 代码预览卡片 - 使用更大的高度比例
                     const codeContainer = document.createElement('div');
-                    codeContainer.className = 'aspect-square bg-gray-50 flex flex-col overflow-hidden';
+                    codeContainer.className = 'bg-gray-50 flex flex-col overflow-hidden';
+                    codeContainer.style.minHeight = '600px'; // 增大预览区域
                     
-                    // 代码预览区域（上半部分）
+                    // 代码预览区域（主要部分，占据更多空间）
                     const previewArea = document.createElement('div');
-                    previewArea.className = 'flex-1 relative border-b border-gray-200';
+                    previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition';
+                    previewArea.style.minHeight = '500px'; // 确保有足够空间显示内容
+                    previewArea.title = '点击查看大图';
                     
                     // 使用 iframe 预览代码
                     const iframe = document.createElement('iframe');
@@ -1545,11 +1555,18 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     iframe.srcdoc = codeContent;
                     previewArea.appendChild(iframe);
                     
+                    // 点击预览区域可以查看大图
+                    previewArea.onclick = (e) => {
+                        if (e.target === previewArea || e.target === iframe) {
+                            showCodePreview(codeContent, modelName);
+                        }
+                    };
+                    
                     codeContainer.appendChild(previewArea);
                     
-                    // 信息区域
+                    // 信息区域（缩小）
                     const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-4 bg-white';
+                    infoDiv.className = 'p-3 bg-white flex-shrink-0';
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-gray-800 font-semibold">${modelName}</span>
@@ -1558,6 +1575,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         <div class="flex gap-2">
                             <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
                                 👁️ 查看代码
+                            </button>
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                🔍 预览大图
                             </button>
                             <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
                                 ⬇️ 下载代码
@@ -1571,8 +1591,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         showCodeModal(codeContent, modelName);
                     };
                     
-                    // 下载代码按钮
+                    // 预览大图按钮
                     infoDiv.querySelectorAll('button')[1].onclick = (e) => {
+                        e.stopPropagation();
+                        showCodePreview(codeContent, modelName);
+                    };
+                    
+                    // 下载代码按钮
+                    infoDiv.querySelectorAll('button')[2].onclick = (e) => {
                         e.stopPropagation();
                         downloadCode(codeContent, modelName);
                     };
