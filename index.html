@@ -631,52 +631,63 @@
             });
         }
         
-        // 加载主界面的模型列表（只显示已选中的模型）
+        // 加载主界面的模型列表（显示所有模型，默认勾选设置中已选的）
         function loadModelSelectionList() {
             const container = document.getElementById('modelSelectionList');
             if (!container) return;
             
             container.innerHTML = '';
             
-            // 获取保存的选中模型
+            // 获取保存的选中模型（作为默认选择）
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
             
-            // 如果没有保存的选中模型，默认选中免费模型
-            const allModels = Object.keys(MODEL_CONFIGS);
-            const defaultSelected = savedSelected.length === 0 
-                ? allModels.filter(key => MODEL_CONFIGS[key].cost === 0)
-                : savedSelected;
-            
-            // 只显示已选中的模型
-            const selectedModels = defaultSelected
-                .filter(key => MODEL_CONFIGS[key]) // 确保模型存在
+            // 获取所有模型并排序（按价格从低到高）
+            const sortedModels = Object.keys(MODEL_CONFIGS)
                 .map(key => ({
                     key: key,
                     ...MODEL_CONFIGS[key]
                 }))
                 .sort((a, b) => a.cost - b.cost);
             
-            // 生成模型选择项（只读显示）
-            selectedModels.forEach(model => {
+            // 如果没有保存的选中模型，默认选中免费模型
+            const defaultSelected = savedSelected.length === 0 
+                ? sortedModels.filter(m => m.cost === 0).map(m => m.key)
+                : savedSelected;
+            
+            // 生成模型选择项（可勾选）
+            sortedModels.forEach(model => {
                 const label = document.createElement('label');
-                label.className = 'flex items-center glass-dark p-3 rounded-lg';
+                label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
+                
+                // 默认勾选设置中已选的模型
+                const isChecked = defaultSelected.includes(model.key);
                 
                 const costDisplay = model.cost === 0 
                     ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
                     : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
                 
+                const typeDisplay = model.type === 'code' 
+                    ? '<span class="text-blue-600 text-xs ml-2">💻</span>'
+                    : model.type === 'image'
+                    ? '<span class="text-purple-600 text-xs ml-2">🖼️</span>'
+                    : '<span class="text-gray-600 text-xs ml-2">📝</span>';
+                
                 label.innerHTML = `
-                    <input type="checkbox" id="model-${model.key}" class="mr-3" checked disabled>
+                    <input type="checkbox" id="model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
                     <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                    ${typeDisplay}
                     ${costDisplay}
                 `;
+                
+                // 添加事件监听
+                const checkbox = label.querySelector('input');
+                checkbox.addEventListener('change', updateCostEstimate);
                 
                 container.appendChild(label);
             });
             
-            // 更新成本估算和显示
+            // 更新成本估算
             updateCostEstimate();
-            updateSelectedModelsDisplay();
         }
         
         // 更新已选模型显示
@@ -705,8 +716,7 @@
                 showSettings();
             }
             updateCharCount();
-            loadModelSelectionList(); // 加载模型列表（只显示已选中的模型）
-            updateSelectedModelsDisplay(); // 更新已选模型显示
+            loadModelSelectionList(); // 加载模型列表（默认勾选设置中已选的模型）
             loadCustomModels();
 
             // 恢复调试模式设置
@@ -944,12 +954,11 @@
                 
                 localStorage.setItem('selected_models', JSON.stringify(selectedModels));
                 
-                // 更新主界面显示
-                updateSelectedModelsDisplay();
-                loadModelSelectionList(); // 重新加载主界面的模型列表
+                // 更新主界面显示（重新加载，默认勾选设置中保存的模型）
+                loadModelSelectionList();
 
                 closeSettings();
-                alert('✅ 设置已保存');
+                alert('✅ 设置已保存，主界面已更新默认选择');
             } else {
                 alert('⚠️ 请输入有效的API Key');
             }
@@ -977,18 +986,17 @@
             }
 
             // 获取选中的模型
-            // 从localStorage获取选中的模型
-            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
-            const allModels = Object.keys(MODEL_CONFIGS);
-            const defaultSelected = savedSelected.length === 0 
-                ? allModels.filter(key => MODEL_CONFIGS[key].cost === 0)
-                : savedSelected;
-            
-            const selectedModels = defaultSelected.filter(key => MODEL_CONFIGS[key]);
+            // 从主界面获取当前勾选的模型
+            const selectedModels = [];
+            for (let key in MODEL_CONFIGS) {
+                const checkbox = document.getElementById(`model-${key}`);
+                if (checkbox && checkbox.checked) {
+                    selectedModels.push(key);
+                }
+            }
 
             if (selectedModels.length === 0) {
-                alert('⚠️ 请至少选择一个模型，请在设置中配置');
-                showSettings();
+                alert('⚠️ 请至少选择一个模型');
                 return;
             }
 
