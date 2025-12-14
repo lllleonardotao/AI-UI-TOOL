@@ -638,29 +638,56 @@
             
             container.innerHTML = '';
             
-            // 获取保存的选中模型（作为默认选择）
+            // 获取设置中保存的可用模型列表（主页面只显示这些模型）
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
             
-            // 获取所有模型并排序（按价格从低到高）
-            const sortedModels = Object.keys(MODEL_CONFIGS)
+            // 如果没有保存的模型，默认使用所有免费模型
+            const availableModels = savedSelected.length === 0 
+                ? Object.keys(MODEL_CONFIGS).filter(key => MODEL_CONFIGS[key].cost === 0)
+                : savedSelected.filter(key => MODEL_CONFIGS[key]); // 确保模型存在
+            
+            if (availableModels.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-sm p-3">请在设置中选择至少一个模型</div>';
+                return;
+            }
+            
+            // 获取上次生成时的选择（如果有）
+            const lastGenerationModels = JSON.parse(localStorage.getItem('last_generation_models') || '[]');
+            
+            // 获取可用模型并排序（按价格从低到高）
+            const sortedModels = availableModels
                 .map(key => ({
                     key: key,
                     ...MODEL_CONFIGS[key]
                 }))
                 .sort((a, b) => a.cost - b.cost);
             
-            // 如果没有保存的选中模型，默认选中免费模型
-            const defaultSelected = savedSelected.length === 0 
-                ? sortedModels.filter(m => m.cost === 0).map(m => m.key)
-                : savedSelected;
+            // 确定默认勾选状态
+            // 如果有上次生成的选择，且这些模型都在当前可用模型中，则使用上次的选择
+            // 否则默认全部勾选
+            let defaultChecked = [];
+            if (lastGenerationModels.length > 0) {
+                // 检查上次选择的模型是否都在当前可用模型中
+                const validLastModels = lastGenerationModels.filter(key => availableModels.includes(key));
+                if (validLastModels.length > 0 && validLastModels.length === lastGenerationModels.length) {
+                    // 上次选择的模型都有效，使用上次的选择
+                    defaultChecked = validLastModels;
+                } else {
+                    // 上次选择的模型无效或部分无效，默认全部勾选
+                    defaultChecked = availableModels;
+                }
+            } else {
+                // 没有上次选择，默认全部勾选
+                defaultChecked = availableModels;
+            }
             
-            // 生成模型选择项（可勾选）
+            // 生成模型选择项（只显示可用模型）
             sortedModels.forEach(model => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
                 
-                // 默认勾选设置中已选的模型
-                const isChecked = defaultSelected.includes(model.key);
+                // 默认勾选（全部勾选或使用上次选择）
+                const isChecked = defaultChecked.includes(model.key);
                 
                 const costDisplay = model.cost === 0 
                     ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
@@ -681,13 +708,28 @@
                 
                 // 添加事件监听
                 const checkbox = label.querySelector('input');
-                checkbox.addEventListener('change', updateCostEstimate);
+                checkbox.addEventListener('change', () => {
+                    updateCostEstimate();
+                    saveLastGenerationModels(); // 保存当前选择
+                });
                 
                 container.appendChild(label);
             });
             
             // 更新成本估算
             updateCostEstimate();
+        }
+        
+        // 保存上次生成时的模型选择
+        function saveLastGenerationModels() {
+            const selectedModels = [];
+            for (let key in MODEL_CONFIGS) {
+                const checkbox = document.getElementById(`model-${key}`);
+                if (checkbox && checkbox.checked) {
+                    selectedModels.push(key);
+                }
+            }
+            localStorage.setItem('last_generation_models', JSON.stringify(selectedModels));
         }
         
 
@@ -935,11 +977,14 @@
                 
                 localStorage.setItem('selected_models', JSON.stringify(selectedModels));
                 
-                // 更新主界面显示（重新加载，默认勾选设置中保存的模型）
+                // 清除上次生成时的选择，因为设置已修改
+                localStorage.removeItem('last_generation_models');
+                
+                // 更新主界面显示（重新加载，显示设置中的模型，默认全部勾选）
                 loadModelSelectionList();
 
                 closeSettings();
-                alert('✅ 设置已保存，主界面已更新默认选择');
+                alert('✅ 设置已保存，主界面已更新');
             } else {
                 alert('⚠️ 请输入有效的API Key');
             }
