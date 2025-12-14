@@ -108,6 +108,21 @@
                         </div>
                     </div>
 
+                    <!-- Platform Selection -->
+                    <div class="mb-4">
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="radio" name="platform" value="mobile" class="mr-2" checked>
+                                <span class="text-gray-800 font-medium">手机端</span>
+                            </label>
+                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="radio" name="platform" value="desktop" class="mr-2">
+                                <span class="text-gray-800 font-medium">PC端</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Model Selection -->
                     <div class="mb-4">
                         <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
@@ -562,14 +577,20 @@
             currentResults = [];
             document.getElementById('resultsGrid').innerHTML = '';
 
+            // 获取平台选择
+            const platformRadio = document.querySelector('input[name="platform"]:checked');
+            const platform = platformRadio ? platformRadio.value : 'mobile';
+            const platformText = platform === 'mobile' ? 'mobile app (iOS/Android)' : 'desktop web application';
+            const platformTitle = platform === 'mobile' ? 'mobile app UI design' : 'desktop web UI design';
+
             // 优化Prompt（加入UI设计约束）
-            const optimizedPrompt = `Create a clean, modern mobile app UI design.
+            const optimizedPrompt = `Create a clean, modern ${platformTitle}.
 
 User requirements: ${prompt}
 
 Design constraints:
 - Style: flat design, minimalist, professional interface
-- Platform: mobile app (iOS/Android)
+- Platform: ${platformText}
 - Layout: clear visual hierarchy, proper spacing
 - Elements: realistic UI components (buttons, inputs, cards)
 - Colors: harmonious color scheme
@@ -1074,22 +1095,28 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 alert('请输入UI设计需求');
                 return;
             }
-            
+
+            // 获取平台选择
+            const platformRadio = document.querySelector('input[name="platform"]:checked');
+            const platform = platformRadio ? platformRadio.value : 'mobile';
+            const platformText = platform === 'mobile' ? 'mobile app (iOS/Android)' : 'desktop web application';
+            const platformTitle = platform === 'mobile' ? 'mobile app UI design' : 'desktop web UI design';
+
             // 重新生成
-            const optimizedPrompt = `Create a clean, modern mobile app UI design.
+            const optimizedPrompt = `Create a clean, modern ${platformTitle}.
 
 User requirements: ${prompt}
 
 Design constraints:
 - Style: flat design, minimalist, professional interface
-- Platform: mobile app (iOS/Android)
+- Platform: ${platformText}
 - Layout: clear visual hierarchy, proper spacing
 - Elements: realistic UI components (buttons, inputs, cards)
 - Colors: harmonious color scheme
 - Output: high-fidelity UI mockup, NOT illustration
 
 Avoid: 3D elements, realistic photos, cartoon style`;
-            
+
             generateWithModel(modelKey, optimizedPrompt);
         }
 
