@@ -705,7 +705,8 @@
                 showSettings();
             }
             updateCharCount();
-            loadModelSelectionList(); // 加载模型列表（按价格排序，默认勾选免费模型）
+            loadModelSelectionList(); // 加载模型列表（只显示已选中的模型）
+            updateSelectedModelsDisplay(); // 更新已选模型显示
             loadCustomModels();
 
             // 恢复调试模式设置
