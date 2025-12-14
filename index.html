@@ -102,47 +102,41 @@
                     <!-- Prompt Input -->
                     <div class="mb-4">
                         <label class="text-gray-700 text-sm font-medium mb-2 block">描述你想要的UI界面</label>
+                        <div class="relative">
                         <textarea 
                             id="promptInput"
                             rows="6"
-                            class="w-full p-4 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                                class="w-full p-4 pr-16 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
-                        <div class="text-gray-500 text-xs mt-1 text-right">
+                            
+                            <!-- 图片上传区域（左下角） -->
+                            <div class="absolute bottom-2 left-2 flex items-center gap-2 flex-wrap">
+                                <!-- 已上传的图片预览 -->
+                                <div id="referenceImagesContainer" class="flex items-center gap-2 flex-wrap"></div>
+                                
+                                <!-- 添加图片按钮 -->
+                                <input 
+                                    type="file" 
+                                    id="referenceImageInput" 
+                                    accept="image/*" 
+                                    class="hidden"
+                                    onchange="handleImageUpload(event)"
+                                    multiple
+                                >
+                                <button 
+                                    type="button"
+                                    onclick="document.getElementById('referenceImageInput').click()"
+                                    class="w-10 h-10 flex items-center justify-center bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition shadow-lg"
+                                    title="添加参考图片"
+                                >
+                                    <span class="text-xl font-bold">+</span>
+                                </button>
+                            </div>
+                            
+                            <!-- 字符计数（右下角） -->
+                            <div class="absolute bottom-2 right-2 text-gray-500 text-xs">
                             <span id="charCount">0</span>/500
-                        </div>
-                    </div>
-
-                    <!-- Reference Image Upload -->
-                    <div class="mb-4">
-                        <label class="text-gray-700 text-sm font-medium mb-2 block">📷 参考图片（可选）</label>
-                        <div class="space-y-2">
-                            <input 
-                                type="file" 
-                                id="referenceImageInput" 
-                                accept="image/*" 
-                                class="hidden"
-                                onchange="handleImageUpload(event)"
-                            >
-                            <button 
-                                type="button"
-                                onclick="document.getElementById('referenceImageInput').click()"
-                                class="w-full glass-dark text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-white/30 transition flex items-center justify-center gap-2"
-                            >
-                                <span>📤 上传参考图片</span>
-                            </button>
-                            <div id="referenceImagePreview" class="hidden">
-                                <div class="relative inline-block">
-                                    <img id="referenceImageDisplay" src="" alt="参考图片" class="max-w-full max-h-48 rounded-lg border border-gray-300">
-                                    <button 
-                                        onclick="removeReferenceImage()"
-                                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition"
-                                        title="删除图片"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                                <p class="text-gray-600 text-xs mt-1">图片将作为参考发送给AI模型</p>
                             </div>
                         </div>
                     </div>
@@ -986,21 +980,21 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             // 根据模型类型构建不同的请求体
             // 如果有关参考图片，使用多模态格式
             let content;
-            if (referenceImage) {
-                // 多模态格式：文本 + 图片
+            if (referenceImages.length > 0) {
+                // 多模态格式：文本 + 多张图片
                 content = [
                     {
                         type: 'text',
                         text: prompt
                     },
-                    {
+                    ...referenceImages.map(img => ({
                         type: 'image_url',
                         image_url: {
-                            url: referenceImage
+                            url: img.data
                         }
-                    }
+                    }))
                 ];
-                debugLog('📷 包含参考图片');
+                debugLog(`📷 包含 ${referenceImages.length} 张参考图片`);
             } else {
                 // 纯文本格式
                 content = prompt;
@@ -1051,10 +1045,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 if (!hasPlatformEmphasis) {
                     const newPrompt = `${prompt}${platformEmphasis}`;
-                    if (referenceImage) {
+                    if (referenceImages.length > 0) {
                         requestBody.messages[0].content = [
                             { type: 'text', text: newPrompt },
-                            { type: 'image_url', image_url: { url: referenceImage } }
+                            ...referenceImages.map(img => ({
+                                type: 'image_url',
+                                image_url: { url: img.data }
+                            }))
                         ];
                     } else {
                         requestBody.messages[0].content = newPrompt;
