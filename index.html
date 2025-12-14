@@ -278,6 +278,34 @@
                 <button onclick="closeHistory()" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
             </div>
             
+            <!-- 搜索和筛选 -->
+            <div class="mb-4 space-y-2">
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="historySearch" 
+                        placeholder="🔍 搜索历史记录..." 
+                        class="flex-1 p-2 rounded-lg bg-white/50 border border-gray-300 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        oninput="filterHistory()"
+                    >
+                    <select 
+                        id="historyFilter" 
+                        class="p-2 rounded-lg bg-white/50 border border-gray-300 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        onchange="filterHistory()"
+                    >
+                        <option value="all">全部</option>
+                        <option value="mobile">手机端</option>
+                        <option value="desktop">PC端</option>
+                        <option value="today">今天</option>
+                        <option value="week">最近一周</option>
+                        <option value="month">最近一月</option>
+                    </select>
+                </div>
+                <div class="text-gray-600 text-xs">
+                    共 <span id="historyCount">0</span> 条记录
+                </div>
+            </div>
+            
             <div id="historyList" class="space-y-3">
                 <!-- 历史记录将在这里动态加载 -->
             </div>
@@ -286,6 +314,12 @@
                 <div class="text-6xl mb-4">📝</div>
                 <p>还没有生成历史记录</p>
                 <p class="text-sm mt-2">开始生成你的第一个UI设计吧！</p>
+            </div>
+            
+            <div id="historyNoResults" class="text-center py-12 text-gray-500 hidden">
+                <div class="text-6xl mb-4">🔍</div>
+                <p>没有找到匹配的历史记录</p>
+                <p class="text-sm mt-2">尝试调整搜索条件</p>
             </div>
             
             <div class="mt-4 flex gap-3">
@@ -360,12 +394,6 @@
                 model: 'anthropic/claude-3.5-sonnet',
                 cost: 0.01,
                 type: 'text-to-image-desc'
-            },
-            'claude-text': {
-                name: 'Claude 3.5 (文字/代码)',
-                model: 'anthropic/claude-3.5-sonnet',
-                cost: 0.01,
-                type: 'text'
             }
         };
 
@@ -780,15 +808,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
             try {
                 let imageUrl;
-                let textContent = null;
                 
                 if (config.type === 'image') {
                     // 直接生成图片的模型（Gemini, Flux, GPT-5）
                     imageUrl = await generateImage(config.model, prompt, platform);
-                } else if (config.type === 'text') {
-                    // 返回文字的模型（Claude 文字/代码模式）
-                    textContent = await generateText(config.model, prompt, platform);
-                    imageUrl = null; // 文字结果不使用 imageUrl
                 } else {
                     // Claude：生成描述后用免费的Gemini生成图
                     const description = await generateDescription(config.model, prompt);
@@ -797,15 +820,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
                 // 成功
                 updateProgressItem(modelKey, 'success');
-                const result = { 
-                    modelName: config.name, 
-                    imageUrl: imageUrl, 
-                    textContent: textContent,
-                    cost: config.cost, 
-                    isError: false, 
-                    errorMsg: '' 
-                };
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg, result.textContent);
+                const result = { modelName: config.name, imageUrl: imageUrl, cost: config.cost, isError: false, errorMsg: '' };
+                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
                 
                 // 返回结果，用于历史记录
                 return result;
@@ -1110,109 +1126,12 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }
         }
 
-        // 生成文字内容
-        async function generateText(model, prompt, platform = 'mobile') {
-            const platformInfo = platform === 'mobile' 
-                ? 'mobile app (iOS/Android)' 
-                : 'desktop web application';
-            
-            const textPrompt = `${prompt}
-
-请生成详细的UI设计说明或代码（HTML/CSS/React等），包括：
-- 布局结构
-- 样式设计
-- 交互元素
-- 平台：${platformInfo}
-
-请提供可以直接使用的代码或详细的实现说明。`;
-
-            const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.href,
-                    'X-Title': 'AI UI Design Comparator'
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: [
-                        {
-                            role: 'user',
-                            content: textPrompt
-                        }
-                    ]
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('文字生成失败');
-            }
-
-            const data = await response.json();
-            return data.choices[0].message.content;
-        }
-
         // 结果相关
-        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '', textContent = null) {
-            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg, textContent });
+        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '') {
+            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg });
             
             const card = document.createElement('div');
             card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
-            
-            // 如果是文字内容（不是图片）
-            if (textContent && !imageUrl) {
-                const textContainer = document.createElement('div');
-                textContainer.className = 'aspect-square bg-gray-50 flex flex-col p-4 overflow-auto';
-                
-                const pre = document.createElement('pre');
-                pre.className = 'text-xs text-gray-800 whitespace-pre-wrap font-mono';
-                pre.textContent = textContent;
-                
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'flex-1 overflow-auto';
-                contentDiv.appendChild(pre);
-                textContainer.appendChild(contentDiv);
-                
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'p-4 border-t border-gray-200';
-                infoDiv.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-gray-800 font-semibold">${modelName}</span>
-                        <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                            📋 复制代码
-                        </button>
-                        <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                            📄 查看完整
-                        </button>
-                    </div>
-                `;
-                
-                const copyBtn = infoDiv.querySelector('button');
-                copyBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(textContent).then(() => {
-                        alert('✅ 代码已复制到剪贴板');
-                    }).catch(err => {
-                        console.error('复制失败:', err);
-                        alert('复制失败，请查看Console');
-                    });
-                };
-                
-                const viewBtn = infoDiv.querySelectorAll('button')[1];
-                viewBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    showRawData(modelName);
-                };
-                
-                card.appendChild(textContainer);
-                card.appendChild(infoDiv);
-                document.getElementById('resultsGrid').appendChild(card);
-                return;
-            }
             
             if (isError) {
                 // 错误卡片
@@ -1529,23 +1448,80 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             document.getElementById('historyModal').classList.remove('flex');
         }
 
+        let filteredHistory = [];
+
         function loadHistory() {
-            const historyList = document.getElementById('historyList');
-            const historyEmpty = document.getElementById('historyEmpty');
-            
             // 从 localStorage 重新加载（确保是最新的）
             generationHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
+            filteredHistory = generationHistory;
+            filterHistory();
+        }
+
+        function filterHistory() {
+            const historyList = document.getElementById('historyList');
+            const historyEmpty = document.getElementById('historyEmpty');
+            const historyNoResults = document.getElementById('historyNoResults');
+            const historyCount = document.getElementById('historyCount');
             
+            const searchText = (document.getElementById('historySearch')?.value || '').toLowerCase();
+            const filterValue = document.getElementById('historyFilter')?.value || 'all';
+            
+            // 筛选历史记录
+            filteredHistory = generationHistory.filter(item => {
+                // 搜索筛选
+                if (searchText) {
+                    const promptMatch = item.prompt.toLowerCase().includes(searchText);
+                    const modelMatch = item.selectedModels.some(key => {
+                        const config = MODEL_CONFIGS[key];
+                        return config && config.name.toLowerCase().includes(searchText);
+                    });
+                    if (!promptMatch && !modelMatch) return false;
+                }
+                
+                // 平台筛选
+                if (filterValue === 'mobile' && item.platform !== 'mobile') return false;
+                if (filterValue === 'desktop' && item.platform !== 'desktop') return false;
+                
+                // 时间筛选
+                if (filterValue === 'today' || filterValue === 'week' || filterValue === 'month') {
+                    const itemDate = new Date(item.timestamp);
+                    const now = new Date();
+                    const diffTime = now - itemDate;
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (filterValue === 'today' && diffDays > 0) return false;
+                    if (filterValue === 'week' && diffDays > 7) return false;
+                    if (filterValue === 'month' && diffDays > 30) return false;
+                }
+                
+                return true;
+            });
+            
+            // 更新计数
+            if (historyCount) {
+                historyCount.textContent = filteredHistory.length;
+            }
+            
+            // 显示/隐藏空状态
             if (generationHistory.length === 0) {
                 historyList.innerHTML = '';
                 historyEmpty.classList.remove('hidden');
+                if (historyNoResults) historyNoResults.classList.add('hidden');
+                return;
+            }
+            
+            if (filteredHistory.length === 0) {
+                historyList.innerHTML = '';
+                historyEmpty.classList.add('hidden');
+                if (historyNoResults) historyNoResults.classList.remove('hidden');
                 return;
             }
             
             historyEmpty.classList.add('hidden');
+            if (historyNoResults) historyNoResults.classList.add('hidden');
             historyList.innerHTML = '';
             
-            generationHistory.forEach((item, index) => {
+            filteredHistory.forEach((item, index) => {
                 const historyCard = document.createElement('div');
                 historyCard.className = 'glass-dark rounded-xl p-4 mb-3';
                 
@@ -1620,7 +1596,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         function viewHistoryItem(historyId) {
-            const item = generationHistory.find(h => h.id === historyId);
+            const item = generationHistory.find(h => h.id === historyId) || filteredHistory.find(h => h.id === historyId);
             if (!item) {
                 alert('历史记录不存在');
                 return;
@@ -1663,7 +1639,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         function regenerateFromHistory(historyId) {
-            const item = generationHistory.find(h => h.id === historyId);
+            const item = generationHistory.find(h => h.id === historyId) || filteredHistory.find(h => h.id === historyId);
             if (!item) {
                 alert('历史记录不存在');
                 return;
