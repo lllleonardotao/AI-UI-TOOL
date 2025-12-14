@@ -1805,9 +1805,12 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         ${item.results.slice(0, 4).map((r, idx) => {
                             if (r.isError) {
                                 return `<div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-xs">❌</div>`;
+                            } else if (r.thumbnail) {
+                                // 显示真实缩略图
+                                return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}">`;
                             } else {
-                                // 只显示模型名称，不显示图片
-                                return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs text-center px-1" title="${r.modelName}">${r.modelName.substring(0, 8)}</div>`;
+                                // 没有缩略图时显示占位符
+                                return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs" title="${r.modelName}">📷</div>`;
                             }
                         }).join('')}
                         ${item.results.length > 4 ? `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 text-xs">+${item.results.length - 4}</div>` : ''}
