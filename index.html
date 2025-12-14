@@ -2225,12 +2225,17 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         isError: r.isError,
                         errorMsg: r.errorMsg,
                         thumbnail: null,
+                        imageUrl: null, // 保存完整图片数据
                         codeContent: null // 保存代码内容用于历史记录预览
                     };
                     
-                    // 如果成功且有图片，生成缩略图
+                    // 如果成功且有图片，保存完整图片数据并生成缩略图
                     if (!r.isError && r.imageUrl) {
+                        // 保存完整图片数据（base64 或 URL）
+                        result.imageUrl = r.imageUrl;
+                        // 生成缩略图
                         result.thumbnail = await generateThumbnail(r.imageUrl, 150);
+                        console.log('📸 生成缩略图:', r.modelName, result.thumbnail ? '成功' : '失败');
                     }
                     
                     // 如果成功且有代码内容，保存代码内容用于预览
@@ -2461,7 +2466,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 const thumbnails = historyCard.querySelectorAll(`#history-thumbnails-${item.id} img`);
                 thumbnails.forEach(img => {
                     img.addEventListener('click', () => {
-                        showImageModal(img.src);
+                        // 优先使用完整图片，如果没有则使用缩略图
+                        const fullImage = img.getAttribute('data-full-image');
+                        showImageModal(fullImage || img.src);
                     });
                 });
                 
