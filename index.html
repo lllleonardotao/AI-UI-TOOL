@@ -1831,54 +1831,17 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                         showCodeModal(codeContent, modelName);
                     };
                     
-                    // 下载图片按钮（从代码预览生成截图）
-                    infoDiv.querySelectorAll('button')[1].onclick = async (e) => {
+                    // 下载图片按钮（打开全屏预览让用户截图）
+                    infoDiv.querySelectorAll('button')[1].onclick = (e) => {
                         e.stopPropagation();
-                        // 从iframe生成图片
-                        try {
-                            const iframe = previewArea.querySelector('iframe');
-                            if (iframe && iframe.contentWindow) {
-                                // 使用html2canvas或直接截图iframe
-                                // 这里使用canvas截图iframe内容
-                                const canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
-                                
-                                // 设置canvas尺寸
-                                canvas.width = iframe.offsetWidth;
-                                canvas.height = iframe.offsetHeight;
-                                
-                                // 尝试使用html2canvas库，如果没有则提示用户
-                                if (typeof html2canvas !== 'undefined') {
-                                    html2canvas(iframe.contentDocument.body).then(canvas => {
-                                        canvas.toBlob(blob => {
-                                            const url = URL.createObjectURL(blob);
-                                            const a = document.createElement('a');
-                                            a.href = url;
-                                            a.download = `${modelName}_preview.png`;
-                                            a.click();
-                                            URL.revokeObjectURL(url);
-                                        });
-                                    });
-                                } else {
-                                    // 如果没有html2canvas，使用简单的方法：打开预览然后提示用户截图
-                                    const platformRadio = document.querySelector('input[name="platform"]:checked');
-                                    const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
-                                    showCodePreview(codeContent, modelName, currentPlatform);
-                                    setTimeout(() => {
-                                        alert('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存');
-                                    }, 500);
-                                }
-                            }
-                        } catch (error) {
-                            console.error('截图失败:', error);
-                            // 如果截图失败，打开预览让用户手动截图
-                            const platformRadio = document.querySelector('input[name="platform"]:checked');
-                            const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
-                            showCodePreview(codeContent, modelName, currentPlatform);
-                            setTimeout(() => {
-                                alert('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存');
-                            }, 500);
-                        }
+                        // 打开全屏预览，让用户截图
+                        const platformRadio = document.querySelector('input[name="platform"]:checked');
+                        const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                        showCodePreview(codeContent, modelName, currentPlatform);
+                        // 显示提示
+                        setTimeout(() => {
+                            showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
+                        }, 500);
                     };
                     
                     codeContainer.appendChild(infoDiv);
