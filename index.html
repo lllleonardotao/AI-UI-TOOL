@@ -1483,8 +1483,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         // 结果相关
-        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '') {
-            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg });
+        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '', codeContent = null) {
+            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg, codeContent });
             
             const card = document.createElement('div');
             card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
