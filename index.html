@@ -102,14 +102,42 @@
                     <!-- Prompt Input -->
                     <div class="mb-4">
                         <label class="text-gray-700 text-sm font-medium mb-2 block">描述你想要的UI界面</label>
+                        <div class="relative">
                         <textarea 
                             id="promptInput"
                             rows="6"
-                            class="w-full p-4 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                                class="w-full p-4 pr-16 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
-                        <div class="text-gray-500 text-xs mt-1 text-right">
+                            
+                            <!-- 图片上传区域（左下角） -->
+                            <div class="absolute bottom-6 left-2 flex items-center gap-2 flex-wrap">
+                                <!-- 已上传的图片预览 -->
+                                <div id="referenceImagesContainer" class="flex items-center gap-2 flex-wrap"></div>
+                                
+                                <!-- 添加图片按钮 -->
+                                <input 
+                                    type="file" 
+                                    id="referenceImageInput" 
+                                    accept="image/*" 
+                                    class="hidden"
+                                    onchange="handleImageUpload(event)"
+                                    multiple
+                                >
+                                <button 
+                                    type="button"
+                                    onclick="document.getElementById('referenceImageInput').click()"
+                                    class="w-10 h-10 flex items-center justify-center bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition shadow-lg"
+                                    title="添加参考图片"
+                                >
+                                    <span class="text-xl font-bold">+</span>
+                                </button>
+                            </div>
+                            
+                            <!-- 字符计数（右下角） -->
+                            <div class="absolute bottom-2 right-2 text-gray-500 text-xs">
                             <span id="charCount">0</span>/500
+                            </div>
                         </div>
                     </div>
 
@@ -410,6 +438,82 @@
         let customModels = JSON.parse(localStorage.getItem('custom_models') || '[]');
         let debugMode = localStorage.getItem('debug_mode') === 'true';
         let generationHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
+        let referenceImages = []; // 存储参考图片的数组，每个元素包含 {id, data}
+
+        // 处理图片上传（支持多张）
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+            
+            files.forEach(file => {
+                // 检查文件类型
+                if (!file.type.startsWith('image/')) {
+                    alert(`⚠️ ${file.name} 不是图片文件`);
+                    return;
+                }
+                
+                // 检查文件大小（限制 10MB）
+                if (file.size > 10 * 1024 * 1024) {
+                    alert(`⚠️ ${file.name} 文件大小超过 10MB`);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageId = Date.now() + Math.random();
+                    const imageData = {
+                        id: imageId,
+                        data: e.target.result // base64 数据
+                    };
+                    
+                    referenceImages.push(imageData);
+                    renderReferenceImages();
+                    
+                    console.log('✅ 参考图片已上传:', imageId);
+                };
+                reader.onerror = () => {
+                    alert(`⚠️ ${file.name} 读取失败`);
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            // 清空 input，允许重复选择同一文件
+            event.target.value = '';
+        }
+
+        // 渲染参考图片列表
+        function renderReferenceImages() {
+            const container = document.getElementById('referenceImagesContainer');
+            container.innerHTML = '';
+            
+            referenceImages.forEach((image, index) => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'relative group';
+                imageItem.innerHTML = `
+                    <img 
+                        src="${image.data}" 
+                        alt="参考图片 ${index + 1}" 
+                        class="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 cursor-pointer hover:border-purple-500 transition"
+                        onclick="showImageModal('${image.data}')"
+                    >
+                    <button 
+                        onclick="removeReferenceImage(${image.id})"
+                        class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition opacity-0 group-hover:opacity-100 text-xs"
+                        title="删除图片"
+                    >
+                        ×
+                    </button>
+                `;
+                container.appendChild(imageItem);
+            });
+        }
+
+        // 移除指定参考图片
+        function removeReferenceImage(imageId) {
+            referenceImages = referenceImages.filter(img => img.id !== imageId);
+            renderReferenceImages();
+            console.log('🗑️ 参考图片已移除:', imageId);
+        }
 
         // 调试日志函数
         function debugLog(...args) {
@@ -593,6 +697,52 @@
         // 字符计数
         document.getElementById('promptInput').addEventListener('input', (e) => {
             updateCharCount();
+        });
+
+        // 支持粘贴图片（Cmd+V / Ctrl+V）
+        document.getElementById('promptInput').addEventListener('paste', async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            // 查找图片类型的剪贴板项
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                
+                // 检查是否是图片类型
+                if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault(); // 阻止默认粘贴行为
+                    
+                    const file = item.getAsFile();
+                    if (!file) continue;
+                    
+                    // 检查文件大小（限制 10MB）
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('⚠️ 图片文件大小超过 10MB');
+                        continue;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const imageId = Date.now() + Math.random();
+                        const imageData = {
+                            id: imageId,
+                            data: event.target.result // base64 数据
+                        };
+                        
+                        referenceImages.push(imageData);
+                        renderReferenceImages();
+                        
+                        console.log('✅ 图片已从剪贴板粘贴:', imageId);
+                        
+                        // 显示提示
+                        showToast('✅ 图片已粘贴');
+                    };
+                    reader.onerror = () => {
+                        alert('⚠️ 图片读取失败');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
         });
 
         function updateCharCount() {
@@ -837,13 +987,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 console.error('生成过程中出错:', error);
             } finally {
                 // 确保按钮状态总是恢复
-                btn.disabled = false;
-                btn.textContent = '🚀 开始生成';
-                
-                // 隐藏进度
-                setTimeout(() => {
-                    document.getElementById('progressSection').classList.add('hidden');
-                }, 2000);
+            btn.disabled = false;
+            btn.textContent = '🚀 开始生成';
+
+            // 隐藏进度
+            setTimeout(() => {
+                document.getElementById('progressSection').classList.add('hidden');
+            }, 2000);
             }
         }
 
@@ -907,12 +1057,34 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 : 'desktop web application';
 
             // 根据模型类型构建不同的请求体
+            // 如果有关参考图片，使用多模态格式
+            let content;
+            if (referenceImages.length > 0) {
+                // 多模态格式：文本 + 多张图片
+                content = [
+                    {
+                        type: 'text',
+                        text: prompt
+                    },
+                    ...referenceImages.map(img => ({
+                        type: 'image_url',
+                        image_url: {
+                            url: img.data
+                        }
+                    }))
+                ];
+                debugLog(`📷 包含 ${referenceImages.length} 张参考图片`);
+            } else {
+                // 纯文本格式
+                content = prompt;
+            }
+            
             const requestBody = {
                 model: model,
                 messages: [
                     {
                         role: 'user',
-                        content: prompt
+                        content: content
                     }
                 ]
             };
@@ -928,7 +1100,18 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     : `\n\nIMPORTANT: This must be a DESKTOP WEB APPLICATION UI design with landscape orientation, desktop navigation (top menu or sidebar), and mouse-optimized elements. The layout can be multi-column, NOT mobile-style.`;
                 
                 if (!prompt.includes('IMPORTANT: This must be')) {
-                    requestBody.messages[0].content = `${prompt}${platformEmphasis}`;
+                    const newPrompt = `${prompt}${platformEmphasis}`;
+                    if (referenceImages.length > 0) {
+                        requestBody.messages[0].content = [
+                            { type: 'text', text: newPrompt },
+                            ...referenceImages.map(img => ({
+                                type: 'image_url',
+                                image_url: { url: img.data }
+                            }))
+                        ];
+                    } else {
+                        requestBody.messages[0].content = newPrompt;
+                    }
                     debugLog('📱 Added explicit platform emphasis for Gemini model:', platform);
                 }
             } else {
@@ -943,7 +1126,18 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                           prompt.includes('DESKTOP WEB APPLICATION');
                 
                 if (!hasPlatformEmphasis) {
-                    requestBody.messages[0].content = `${prompt}${platformEmphasis}`;
+                    const newPrompt = `${prompt}${platformEmphasis}`;
+                    if (referenceImages.length > 0) {
+                        requestBody.messages[0].content = [
+                            { type: 'text', text: newPrompt },
+                            ...referenceImages.map(img => ({
+                                type: 'image_url',
+                                image_url: { url: img.data }
+                            }))
+                        ];
+                    } else {
+                        requestBody.messages[0].content = newPrompt;
+                    }
                     debugLog('📱 Added platform emphasis for model:', model, platform);
                 }
             }
@@ -1503,13 +1697,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     }
                     
                     const downloadUrl = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = `${modelName}_${Date.now()}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(downloadUrl);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `${modelName}_${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
                 }, 'image/png');
                 
             } catch (error) {
@@ -1527,7 +1721,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     document.body.removeChild(a);
                     URL.revokeObjectURL(downloadUrl);
                 } catch (fallbackError) {
-                    alert('⚠️ 下载失败，请右键保存图片');
+                alert('⚠️ 下载失败，请右键保存图片');
                 }
             }
         }
@@ -1612,35 +1806,35 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     return result;
                 }));
                 
-                const historyItem = {
-                    id: Date.now(),
-                    timestamp: new Date().toISOString(),
-                    prompt: prompt,
-                    platform: platform,
-                    platformText: platform === 'mobile' ? '手机端' : 'PC端',
-                    selectedModels: selectedModels,
+            const historyItem = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                prompt: prompt,
+                platform: platform,
+                platformText: platform === 'mobile' ? '手机端' : 'PC端',
+                selectedModels: selectedModels,
                     results: processedResults,
-                    totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
-                };
+                totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
+            };
                 
                 console.log('🔵 创建历史记录项:', {
                     id: historyItem.id,
                     resultsCount: historyItem.results.length,
                     results: historyItem.results.map(r => r.modelName)
                 });
-                
-                // 添加到历史记录数组的开头（最新的在前面）
+            
+            // 添加到历史记录数组的开头（最新的在前面）
                 existingHistory.unshift(historyItem);
-                
-                // 限制历史记录数量（最多保存50条）
+            
+            // 限制历史记录数量（最多保存50条）
                 const finalHistory = existingHistory.length > 50 
                     ? existingHistory.slice(0, 50) 
                     : existingHistory;
                 
                 // 更新全局变量
                 generationHistory = finalHistory;
-                
-                // 保存到 localStorage
+            
+            // 保存到 localStorage
                 localStorage.setItem('generation_history', JSON.stringify(finalHistory));
                 
                 // 验证保存是否成功
@@ -1743,7 +1937,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             
             if (filteredHistory.length === 0) {
                 historyList.innerHTML = '';
-                historyEmpty.classList.add('hidden');
+            historyEmpty.classList.add('hidden');
                 if (historyNoResults) historyNoResults.classList.remove('hidden');
                 return;
             }
@@ -1954,6 +2148,30 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             generationHistory = [];
             localStorage.setItem('generation_history', JSON.stringify(generationHistory));
             loadHistory();
+        }
+
+        // 显示提示消息
+        function showToast(message, duration = 2000) {
+            // 创建 toast 元素
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity opacity-0';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // 显示动画
+            setTimeout(() => {
+                toast.style.opacity = '1';
+            }, 10);
+            
+            // 自动移除
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
         }
     </script>
 </body>
