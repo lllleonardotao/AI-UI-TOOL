@@ -455,13 +455,13 @@
             },
             'deepseek-chat-v3': {
                 name: 'DeepSeek Chat v3.1 (代码) (免费)',
-                model: 'deepseek/deepseek-chat-v3.1:free',
+                model: 'deepseek/deepseek-chat-v3.1',
                 cost: 0,
                 type: 'code'
             },
             'deepseek-r1': {
                 name: 'DeepSeek R1 Distill (代码) (免费)',
-                model: 'deepseek/deepseek-r1-distill-qwen-8b:free',
+                model: 'deepseek/deepseek-r1-distill-qwen-8b',
                 cost: 0,
                 type: 'code'
             },
@@ -1458,7 +1458,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                 role: 'user',
                                 content: content
                             }
-                        ]
+                        ],
+                        // 根据模型类型设置max_tokens，避免402错误
+                        max_tokens: model.includes(':free') ? 16000 : 32000
                     }),
                     signal: controller.signal
                 });
