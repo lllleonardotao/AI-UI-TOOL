@@ -105,8 +105,8 @@
                         <div class="relative">
                         <textarea 
                             id="promptInput"
-                            rows="6"
-                                class="w-full p-4 pr-16 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                            rows="4"
+                                class="w-full p-4 pr-12 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
                             
@@ -235,15 +235,23 @@
                 </p>
             </div>
 
-            <!-- Custom Models -->
+            <!-- Model Selection -->
             <div class="mb-6">
-                <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 自定义模型</label>
-                <div id="customModelsList" class="space-y-2 mb-3">
-                    <!-- Custom models will be added here -->
+                <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型（至少选择一个）</label>
+                <div class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-yellow-800 text-xs">💡 至少需要选择一个模型才能生成内容</p>
+                </div>
+                <div id="settingsModelList" class="space-y-2 max-h-96 overflow-y-auto mb-3">
+                    <!-- 模型列表将在这里动态生成 -->
                 </div>
                 <button onclick="addCustomModel()" class="w-full glass-dark text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-white/30 transition">
-                    ➕ 添加新模型
+                    ➕ 添加自定义模型
                 </button>
+            </div>
+            
+            <!-- Custom Models (hidden, moved to main model list) -->
+            <div id="customModelsList" class="hidden">
+                <!-- Custom models will be added here -->
             </div>
 
             <!-- Add Model Form (hidden by default) -->
@@ -422,7 +430,56 @@
                 model: 'anthropic/claude-3.5-sonnet',
                 cost: 0.01,
                 type: 'text-to-image-desc'
-            }
+            },
+            'claude-code': {
+                name: 'Claude 3.5 (代码)',
+                model: 'anthropic/claude-3.5-sonnet',
+                cost: 0.01,
+                type: 'code'
+            },
+            'gpt4-code': {
+                name: 'GPT-4 Turbo (代码)',
+                model: 'openai/gpt-4-turbo',
+                cost: 0.01,
+                type: 'code'
+            },
+            'deepseek-code': {
+                name: 'DeepSeek Coder (代码)',
+                model: 'deepseek/deepseek-chat', // 使用 deepseek-chat，deepseek-coder 可能不可用
+                cost: 0.0001,
+                type: 'code'
+            },
+            'gpt4o-code': {
+                name: 'GPT-4o (代码)',
+                model: 'openai/gpt-4o',
+                cost: 0.005,
+                type: 'code'
+            },
+            'qwen-coder': {
+                name: 'Qwen3 Coder (代码) (免费)',
+                model: 'qwen/qwen3-coder:free',
+                cost: 0,
+                type: 'code'
+            },
+            // 以下模型暂时不可用，已注释
+            // 'deepseek-chat-v3': {
+            //     name: 'DeepSeek Chat v3.1 (代码) (免费)',
+            //     model: 'deepseek/deepseek-chat-v3.1',
+            //     cost: 0,
+            //     type: 'code'
+            // },
+            // 'deepseek-r1': {
+            //     name: 'DeepSeek R1 Distill (代码) (免费)',
+            //     model: 'deepseek/deepseek-r1-distill-qwen-8b',
+            //     cost: 0,
+            //     type: 'code'
+            // },
+            // 'qwen-coder-plus': {
+            //     name: 'Qwen3 Coder Plus (代码)',
+            //     model: 'qwen/qwen3-coder-plus',
+            //     cost: 0.001,
+            //     type: 'code'
+            // }
         };
 
         // 模板
@@ -522,43 +579,140 @@
             }
         }
 
-        // 加载模型选择列表（按价格从低到高排序，默认勾选免费模型）
-        function loadModelSelectionList() {
-            const container = document.getElementById('modelSelectionList');
+        // 加载设置中的模型列表
+        function loadSettingsModelList() {
+            const container = document.getElementById('settingsModelList');
             if (!container) return;
             
             container.innerHTML = '';
             
+            // 获取保存的选中模型
+            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
+            
             // 获取所有模型并排序（按价格从低到高）
             const sortedModels = Object.keys(MODEL_CONFIGS)
-                .filter(key => !key.startsWith('custom-')) // 排除自定义模型（它们会单独加载）
                 .map(key => ({
                     key: key,
                     ...MODEL_CONFIGS[key]
                 }))
                 .sort((a, b) => a.cost - b.cost); // 按价格从低到高排序
             
+            // 如果没有保存的选中模型，默认选中免费模型
+            const defaultSelected = savedSelected.length === 0 
+                ? sortedModels.filter(m => m.cost === 0).map(m => m.key)
+                : savedSelected;
+            
             // 生成模型选择项
             sortedModels.forEach(model => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
                 
-                // 默认只勾选免费模型
-                const isChecked = model.cost === 0;
+                // 检查是否已选中
+                const isChecked = defaultSelected.includes(model.key);
                 
                 const costDisplay = model.cost === 0 
                     ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
                     : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
                 
+                const typeDisplay = model.type === 'code' 
+                    ? '<span class="text-blue-600 text-xs ml-2">💻 代码</span>'
+                    : model.type === 'image'
+                    ? '<span class="text-purple-600 text-xs ml-2">🖼️ 图片</span>'
+                    : '<span class="text-gray-600 text-xs ml-2">📝 描述</span>';
+                
+                label.innerHTML = `
+                    <input type="checkbox" id="settings-model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
+                    <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                    ${typeDisplay}
+                    ${costDisplay}
+                `;
+                
+                container.appendChild(label);
+            });
+        }
+        
+        // 加载主界面的模型列表（显示所有模型，默认勾选设置中已选的）
+        function loadModelSelectionList() {
+            const container = document.getElementById('modelSelectionList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // 获取设置中保存的可用模型列表（主页面只显示这些模型）
+            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
+            
+            // 如果没有保存的模型，默认使用这几个代码生成模型
+            const defaultModels = ['qwen-coder', 'deepseek-code', 'gpt4o-code', 'claude-code', 'gpt4-code'];
+            const availableModels = savedSelected.length === 0 
+                ? defaultModels.filter(key => MODEL_CONFIGS[key]) // 确保模型存在
+                : savedSelected.filter(key => MODEL_CONFIGS[key]); // 确保模型存在
+            
+            if (availableModels.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-sm p-3">请在设置中选择至少一个模型</div>';
+                return;
+            }
+            
+            // 获取上次生成时的选择（如果有）
+            const lastGenerationModels = JSON.parse(localStorage.getItem('last_generation_models') || '[]');
+            
+            // 获取可用模型并排序（按价格从低到高）
+            const sortedModels = availableModels
+                .map(key => ({
+                    key: key,
+                    ...MODEL_CONFIGS[key]
+                }))
+                .sort((a, b) => a.cost - b.cost);
+            
+            // 确定默认勾选状态
+            // 如果有上次生成的选择，且这些模型都在当前可用模型中，则使用上次的选择
+            // 否则默认全部勾选
+            let defaultChecked = [];
+            if (lastGenerationModels.length > 0) {
+                // 检查上次选择的模型是否都在当前可用模型中
+                const validLastModels = lastGenerationModels.filter(key => availableModels.includes(key));
+                if (validLastModels.length > 0 && validLastModels.length === lastGenerationModels.length) {
+                    // 上次选择的模型都有效，使用上次的选择
+                    defaultChecked = validLastModels;
+                } else {
+                    // 上次选择的模型无效或部分无效，默认全部勾选
+                    defaultChecked = availableModels;
+                }
+            } else {
+                // 没有上次选择，默认全部勾选
+                defaultChecked = availableModels;
+            }
+            
+            // 生成模型选择项（只显示可用模型）
+            sortedModels.forEach(model => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
+                
+                // 默认勾选（全部勾选或使用上次选择）
+                const isChecked = defaultChecked.includes(model.key);
+                
+                const costDisplay = model.cost === 0 
+                    ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
+                    : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
+                
+                const typeDisplay = model.type === 'code' 
+                    ? '<span class="text-blue-600 text-xs ml-2">💻</span>'
+                    : model.type === 'image'
+                    ? '<span class="text-purple-600 text-xs ml-2">🖼️</span>'
+                    : '<span class="text-gray-600 text-xs ml-2">📝</span>';
+                
                 label.innerHTML = `
                     <input type="checkbox" id="model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
                     <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                    ${typeDisplay}
                     ${costDisplay}
                 `;
                 
                 // 添加事件监听
                 const checkbox = label.querySelector('input');
-                checkbox.addEventListener('change', updateCostEstimate);
+                checkbox.addEventListener('change', () => {
+                    updateCostEstimate();
+                    saveLastGenerationModels(); // 保存当前选择
+                });
                 
                 container.appendChild(label);
             });
@@ -566,6 +720,19 @@
             // 更新成本估算
             updateCostEstimate();
         }
+        
+        // 保存上次生成时的模型选择
+        function saveLastGenerationModels() {
+            const selectedModels = [];
+            for (let key in MODEL_CONFIGS) {
+                const checkbox = document.getElementById(`model-${key}`);
+                if (checkbox && checkbox.checked) {
+                    selectedModels.push(key);
+                }
+            }
+            localStorage.setItem('last_generation_models', JSON.stringify(selectedModels));
+        }
+        
 
         // 页面加载时检查API Key
         window.onload = () => {
@@ -573,7 +740,7 @@
                 showSettings();
             }
             updateCharCount();
-            loadModelSelectionList(); // 加载模型列表（按价格排序，默认勾选免费模型）
+            loadModelSelectionList(); // 加载模型列表（默认勾选设置中已选的模型）
             loadCustomModels();
 
             // 恢复调试模式设置
@@ -668,9 +835,10 @@
             localStorage.setItem('custom_models', JSON.stringify(customModels));
             
             loadCustomModels();
+            loadSettingsModelList(); // 刷新设置中的模型列表
             cancelAddModel();
             
-            alert('✅ 模型已添加');
+            alert('✅ 模型已添加，请在设置中勾选以使用');
         }
 
         function deleteCustomModel(index) {
@@ -776,6 +944,7 @@
             document.getElementById('settingsModal').classList.remove('hidden');
             document.getElementById('settingsModal').classList.add('flex');
             document.getElementById('apiKeyInput').value = apiKey;
+            loadSettingsModelList(); // 加载设置中的模型列表
         }
 
         function closeSettings() {
@@ -793,9 +962,30 @@
                 const debugCheckbox = document.getElementById('debugMode');
                 debugMode = debugCheckbox.checked;
                 localStorage.setItem('debug_mode', debugMode.toString());
+                
+                // 保存选中的模型
+                const selectedModels = [];
+                const checkboxes = document.querySelectorAll('#settingsModelList input[type="checkbox"]:checked');
+                checkboxes.forEach(cb => {
+                    selectedModels.push(cb.id.replace('settings-model-', ''));
+                });
+                
+                // 验证至少选择一个模型
+                if (selectedModels.length === 0) {
+                    alert('⚠️ 请至少选择一个模型');
+                    return;
+                }
+                
+                localStorage.setItem('selected_models', JSON.stringify(selectedModels));
+                
+                // 清除上次生成时的选择，因为设置已修改
+                localStorage.removeItem('last_generation_models');
+                
+                // 更新主界面显示（重新加载，显示设置中的模型，默认全部勾选）
+                loadModelSelectionList();
 
                 closeSettings();
-                alert('✅ 设置已保存');
+                alert('✅ 设置已保存，主界面已更新');
             } else {
                 alert('⚠️ 请输入有效的API Key');
             }
@@ -823,6 +1013,7 @@
             }
 
             // 获取选中的模型
+            // 从主界面获取当前勾选的模型
             const selectedModels = [];
             for (let key in MODEL_CONFIGS) {
                 const checkbox = document.getElementById(`model-${key}`);
@@ -835,6 +1026,9 @@
                 alert('⚠️ 请至少选择一个模型');
                 return;
             }
+            
+            // 保存当前选择，用于下次加载时恢复
+            localStorage.setItem('last_generation_models', JSON.stringify(selectedModels));
 
             // 禁用按钮
             const btn = document.getElementById('generateBtn');
@@ -1004,11 +1198,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             addProgressItem(modelKey, 'pending');
 
             try {
-                let imageUrl;
+                let imageUrl = null;
+                let codeContent = null;
                 
                 if (config.type === 'image') {
                     // 直接生成图片的模型（Gemini, Flux, GPT-5）
                     imageUrl = await generateImage(config.model, prompt, platform);
+                } else if (config.type === 'code') {
+                    // 生成代码的模型
+                    codeContent = await generateCode(config.model, prompt, platform);
                 } else {
                     // Claude：生成描述后用免费的Gemini生成图
                     const description = await generateDescription(config.model, prompt);
@@ -1017,8 +1215,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
                 // 成功
                 updateProgressItem(modelKey, 'success');
-                const result = { modelName: config.name, imageUrl: imageUrl, cost: config.cost, isError: false, errorMsg: '' };
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                const result = { 
+                    modelName: config.name, 
+                    imageUrl: imageUrl, 
+                    codeContent: codeContent,
+                    cost: config.cost, 
+                    isError: false, 
+                    errorMsg: '' 
+                };
+                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg, result.codeContent);
                 
                 // 返回结果，用于历史记录
                 return result;
@@ -1028,8 +1233,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 updateProgressItem(modelKey, 'error', error.message);
                 
                 // 添加错误卡片（不会消失）
-                const result = { modelName: config.name, imageUrl: '', cost: config.cost, isError: true, errorMsg: error.message };
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
+                const result = { modelName: config.name, imageUrl: '', cost: config.cost, isError: true, errorMsg: error.message, codeContent: null };
+                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg, result.codeContent);
                 
                 // 返回结果，用于历史记录
                 return result;
@@ -1334,6 +1539,149 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             return data.choices[0].message.content;
         }
 
+        /**
+         * 生成代码
+         */
+        async function generateCode(model, prompt, platform = 'mobile') {
+            const platformInfo = platform === 'mobile' 
+                ? 'mobile app (iOS/Android)' 
+                : 'desktop web application';
+            
+            // 构建包含参考图片的 prompt
+            let codePrompt = `${prompt}
+
+请生成完整的、可直接运行的 ${platformInfo} UI 界面代码。
+
+要求：
+1. 生成完整的 HTML、CSS 和 JavaScript 代码
+2. 代码应该是一个完整的、可独立运行的 HTML 文件
+3. 使用现代 CSS（Flexbox/Grid）实现布局
+4. 确保代码可以直接在浏览器中运行
+5. 如果是移动端，使用响应式设计，适配移动屏幕
+6. 如果是桌面端，使用适合桌面屏幕的布局
+7. 代码要包含所有必要的样式和交互功能
+8. 使用内联样式或 <style> 标签，确保代码可以独立运行
+
+请直接输出完整的 HTML 代码，不要包含任何解释文字，只输出代码。`;
+
+            // 构建消息内容
+            let content;
+            if (referenceImages.length > 0) {
+                // 包含参考图片
+                content = [
+                    {
+                        type: 'text',
+                        text: codePrompt
+                    },
+                    ...referenceImages.map(img => ({
+                        type: 'image_url',
+                        image_url: {
+                            url: img.data
+                        }
+                    }))
+                ];
+            } else {
+                content = codePrompt;
+            }
+
+            // 设置超时时间（90秒，代码生成可能需要更长时间）
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 90000);
+            
+            try {
+                const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'AI UI Design Comparator'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            {
+                                role: 'user',
+                                content: content
+                            }
+                        ],
+                        // 根据模型类型设置max_tokens，降低token消耗以节省credits
+                        max_tokens: model.includes(':free') ? 8000 : 16000
+                    }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('代码生成API错误:', errorText);
+                    
+                    // 解析错误信息，提供更友好的错误提示
+                    let errorMessage = `代码生成失败: ${response.status}`;
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        if (errorData.error && errorData.error.message) {
+                            if (response.status === 429) {
+                                errorMessage = `代码生成失败: 429 (免费模型限流，请稍后重试或添加自己的API密钥)`;
+                            } else if (response.status === 402) {
+                                errorMessage = `代码生成失败: 402 (需要更多credits，请减少请求的token数量或添加credits)`;
+                            } else if (response.status === 404) {
+                                errorMessage = `代码生成失败: 404 (模型ID不存在，请检查模型名称)`;
+                            } else {
+                                errorMessage = `代码生成失败: ${response.status} - ${errorData.error.message}`;
+                            }
+                        }
+                    } catch (e) {
+                        // 如果解析失败，使用默认错误信息
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    throw new Error('API返回格式错误');
+                }
+                
+                let code = data.choices[0].message.content;
+                
+                if (!code || code.trim().length === 0) {
+                    throw new Error('生成的代码为空');
+                }
+                
+                // 提取代码块（如果返回的是 markdown 格式）
+                const codeBlockMatch = code.match(/```(?:html|css|javascript|js)?\n([\s\S]*?)```/);
+                if (codeBlockMatch) {
+                    code = codeBlockMatch[1];
+                }
+                
+                // 确保代码包含基本的HTML结构
+                if (!code.includes('<html') && !code.includes('<!DOCTYPE')) {
+                    // 如果没有完整的HTML结构，尝试包装它
+                    if (code.includes('<body') || code.includes('<div')) {
+                        code = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated UI</title>
+</head>
+${code.includes('<body') ? code : '<body>' + code + '</body>'}
+</html>`;
+                    }
+                }
+                
+                return code;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('请求超时（90秒），请重试或选择其他模型');
+                }
+                throw error;
+            }
+        }
+
         // 进度相关
         function addProgressItem(modelKey, status) {
             const config = MODEL_CONFIGS[modelKey];
@@ -1368,8 +1716,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         // 结果相关
-        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '') {
-            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg });
+        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '', codeContent = null) {
+            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg, codeContent });
             
             const card = document.createElement('div');
             card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
@@ -1414,6 +1762,94 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 console.log('📦 isBase64:', isBase64);
                 console.log('📦 isHttpUrl:', isHttpUrl);
                 
+                // 如果是代码内容
+                if (codeContent) {
+                    // 代码预览卡片 - 使用固定高度，确保按钮在底部
+                    const codeContainer = document.createElement('div');
+                    codeContainer.className = 'bg-gray-50 flex flex-col overflow-hidden';
+                    codeContainer.style.height = '600px'; // 固定高度，使用height而不是minHeight
+                    
+                    // 代码预览区域（主要部分，占据更多空间）
+                    const previewArea = document.createElement('div');
+                    previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-auto';
+                    previewArea.style.minHeight = '0'; // 让flex-1正常工作
+                    previewArea.title = '点击查看大图';
+                    
+                    // 使用 iframe 预览代码
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'w-full h-full border-0';
+                    iframe.srcdoc = codeContent;
+                    previewArea.appendChild(iframe);
+                    
+                    // 点击预览区域可以查看大图
+                    previewArea.style.cursor = 'pointer';
+                    previewArea.onclick = (e) => {
+                        e.stopPropagation();
+                        // 获取当前平台信息
+                        const platformRadio = document.querySelector('input[name="platform"]:checked');
+                        const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                        showCodePreview(codeContent, modelName, currentPlatform);
+                    };
+                    
+                    // iframe 内部点击也触发（通过父元素）
+                    iframe.onload = () => {
+                        try {
+                            iframe.contentDocument.body.onclick = () => {
+                                // 获取当前平台信息
+                                const platformRadio = document.querySelector('input[name="platform"]:checked');
+                                const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                                showCodePreview(codeContent, modelName, currentPlatform);
+                            };
+                        } catch (e) {
+                            // 跨域限制，忽略
+                        }
+                    };
+                    
+                    codeContainer.appendChild(previewArea);
+                    
+                    // 信息区域（缩小）
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'p-3 bg-white flex-shrink-0';
+                    infoDiv.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-800 font-semibold">${modelName}</span>
+                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                👁️ 查看代码
+                            </button>
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                ⬇️ 下载图片
+                            </button>
+                        </div>
+                    `;
+                    
+                    // 查看代码按钮
+                    infoDiv.querySelectorAll('button')[0].onclick = (e) => {
+                        e.stopPropagation();
+                        showCodeModal(codeContent, modelName);
+                    };
+                    
+                    // 下载图片按钮（打开全屏预览让用户截图）
+                    infoDiv.querySelectorAll('button')[1].onclick = (e) => {
+                        e.stopPropagation();
+                        // 打开全屏预览，让用户截图
+                        const platformRadio = document.querySelector('input[name="platform"]:checked');
+                        const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                        showCodePreview(codeContent, modelName, currentPlatform);
+                        // 显示提示
+                        setTimeout(() => {
+                            showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
+                        }, 500);
+                    };
+                    
+                    codeContainer.appendChild(infoDiv);
+                    card.appendChild(codeContainer);
+                    document.getElementById('resultsGrid').appendChild(card);
+                    return;
+                }
+                
                 if (isBase64 || isHttpUrl) {
                     // 使用JavaScript创建图片元素，避免HTML字符串问题
                     const imgContainer = document.createElement('div');
@@ -1457,22 +1893,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         </div>
                         <div class="flex gap-2">
                             <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载
-                            </button>
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                🔍 数据
+                                ⬇️ 下载图片
                             </button>
                         </div>
                     `;
                     
-                    const buttons = infoDiv.querySelectorAll('button');
-                    buttons[0].onclick = (e) => {
+                    const button = infoDiv.querySelector('button');
+                    button.onclick = (e) => {
                         e.stopPropagation();
                         downloadImage(imageUrl, modelName);
-                    };
-                    buttons[1].onclick = (e) => {
-                        e.stopPropagation();
-                        showRawData(modelName);
                     };
                     
                     card.appendChild(imgContainer);
@@ -1795,12 +2224,23 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         cost: r.cost,
                         isError: r.isError,
                         errorMsg: r.errorMsg,
-                        thumbnail: null
+                        thumbnail: null,
+                        imageUrl: null, // 保存完整图片数据
+                        codeContent: null // 保存代码内容用于历史记录预览
                     };
                     
-                    // 如果成功且有图片，生成缩略图
+                    // 如果成功且有图片，保存完整图片数据并生成缩略图
                     if (!r.isError && r.imageUrl) {
+                        // 保存完整图片数据（base64 或 URL）
+                        result.imageUrl = r.imageUrl;
+                        // 生成缩略图
                         result.thumbnail = await generateThumbnail(r.imageUrl, 150);
+                        console.log('📸 生成缩略图:', r.modelName, result.thumbnail ? '成功' : '失败');
+                    }
+                    
+                    // 如果成功且有代码内容，保存代码内容用于预览
+                    if (!r.isError && r.codeContent) {
+                        result.codeContent = r.codeContent;
                     }
                     
                     return result;
@@ -2000,8 +2440,20 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             if (r.isError) {
                                 return `<div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-xs">❌</div>`;
                             } else if (r.thumbnail) {
-                                // 显示真实缩略图
-                                return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}">`;
+                                // 显示真实图片缩略图
+                                return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}" data-full-image="${r.imageUrl ? escapeHtml(r.imageUrl) : ''}">`;
+                            } else if (r.imageUrl && (r.imageUrl.startsWith('data:image') || r.imageUrl.startsWith('http'))) {
+                                // 如果有完整图片但没有缩略图，直接使用完整图片（缩小显示）
+                                return `<img src="${r.imageUrl}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}" data-full-image="${escapeHtml(r.imageUrl)}">`;
+                            } else if (r.codeContent) {
+                                // 显示代码预览缩略图（使用iframe缩放显示）
+                                const codePreviewId = `code-preview-${item.id}-${idx}`;
+                                return `<div class="w-16 h-16 bg-white rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer code-thumbnail group" data-code="${escapeHtml(JSON.stringify(r.codeContent))}" data-model="${escapeHtml(r.modelName)}" title="${r.modelName}">
+                                    <iframe id="${codePreviewId}" srcdoc="${escapeHtml(r.codeContent)}" class="w-full h-full border-0 pointer-events-none" style="transform: scale(0.2); transform-origin: 0 0; width: 500%; height: 500%;"></iframe>
+                                    <div class="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <span class="text-blue-600 text-xs font-medium">💻 代码</span>
+                                    </div>
+                                </div>`;
                             } else {
                                 // 没有缩略图时显示占位符
                                 return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs" title="${r.modelName}">📷</div>`;
@@ -2017,7 +2469,25 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 const thumbnails = historyCard.querySelectorAll(`#history-thumbnails-${item.id} img`);
                 thumbnails.forEach(img => {
                     img.addEventListener('click', () => {
-                        showImageModal(img.src);
+                        // 优先使用完整图片，如果没有则使用缩略图
+                        const fullImage = img.getAttribute('data-full-image');
+                        showImageModal(fullImage || img.src);
+                    });
+                });
+                
+                // 为代码预览缩略图添加点击事件（查看代码预览）
+                const codeThumbnails = historyCard.querySelectorAll(`#history-thumbnails-${item.id} .code-thumbnail`);
+                codeThumbnails.forEach(thumb => {
+                    thumb.addEventListener('click', () => {
+                        try {
+                            const codeContent = JSON.parse(thumb.getAttribute('data-code'));
+                            const modelName = thumb.getAttribute('data-model');
+                            const platformRadio = document.querySelector('input[name="platform"]:checked');
+                            const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                            showCodePreview(codeContent, modelName, currentPlatform);
+                        } catch (e) {
+                            console.error('解析代码内容失败:', e);
+                        }
                     });
                 });
             });
@@ -2038,7 +2508,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             item.results.forEach(result => {
                 if (result.isError) {
                     // 错误结果
-                    addResultCard(result.modelName, '', result.cost, true, result.errorMsg);
+                    addResultCard(result.modelName, '', result.cost, true, result.errorMsg, null);
                 } else {
                     // 成功结果，但图片数据未保存，显示提示
                     const card = document.createElement('div');
@@ -2172,6 +2642,120 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     }
                 }, 300);
             }, duration);
+        }
+
+        // HTML 转义函数
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 显示代码预览大图（全屏预览）
+        function showCodePreview(codeContent, modelName, platform = 'mobile') {
+            // 创建全屏预览模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50';
+            
+            const modalContent = document.createElement('div');
+            
+            // 根据平台调整预览尺寸，支持拖拽调整大小
+            if (platform === 'mobile') {
+                // 移动端：使用 iPhone 16 屏幕比例，增加高度，支持调整
+                modalContent.className = 'relative flex flex-col';
+                modalContent.style.width = '393px'; // iPhone 16 宽度
+                modalContent.style.height = '900px'; // 增加高度，从852px增加到900px
+                modalContent.style.minWidth = '300px'; // 最小宽度，支持调整
+                modalContent.style.minHeight = '600px'; // 最小高度，支持调整
+                modalContent.style.maxWidth = '90vw'; // 在小屏幕上自适应
+                modalContent.style.maxHeight = '95vh'; // 增加最大高度，从90vh到95vh
+                modalContent.style.resize = 'both'; // 允许双向调整大小
+                modalContent.style.overflow = 'auto'; // 允许滚动
+            } else {
+                // PC端：使用桌面屏幕比例，增加高度，支持调整
+                modalContent.className = 'relative flex flex-col';
+                modalContent.style.width = '90vw';
+                modalContent.style.maxWidth = '1400px'; // 增加最大宽度
+                modalContent.style.height = '85vh'; // 增加高度，从80vh到85vh
+                modalContent.style.minWidth = '600px'; // 最小宽度
+                modalContent.style.minHeight = '500px'; // 最小高度
+                modalContent.style.maxHeight = '90vh'; // 增加最大高度
+                modalContent.style.resize = 'both'; // 允许双向调整大小
+                modalContent.style.overflow = 'auto'; // 允许滚动
+            }
+            
+            const header = document.createElement('div');
+            header.className = 'flex items-center justify-between mb-4 bg-gray-900/50 p-4 rounded-t-lg';
+            header.innerHTML = `
+                <h2 class="text-xl font-bold text-white">🔍 ${modelName} - 预览</h2>
+                <button class="close-preview-btn text-white hover:text-gray-300 text-3xl font-bold">&times;</button>
+            `;
+            
+            const iframeContainer = document.createElement('div');
+            iframeContainer.className = 'flex-1 bg-white rounded-lg overflow-hidden shadow-2xl';
+            iframeContainer.style.minHeight = '0'; // 让flex-1正常工作
+            
+            const iframe = document.createElement('iframe');
+            iframe.className = 'w-full h-full border-0';
+            iframe.srcdoc = codeContent;
+            iframeContainer.appendChild(iframe);
+            
+            const footer = document.createElement('div');
+            footer.className = 'mt-4 flex gap-3 bg-gray-900/50 p-4 rounded-b-lg';
+            footer.innerHTML = `
+                <button class="copy-preview-btn flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                    📋 复制代码
+                </button>
+                <button class="download-preview-btn flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                    ⬇️ 下载代码
+                </button>
+                <button class="close-preview-btn flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                    关闭
+                </button>
+            `;
+            
+            // 关闭按钮
+            header.querySelector('.close-preview-btn').onclick = () => {
+                modal.remove();
+                document.removeEventListener('keydown', handleEsc);
+            };
+            footer.querySelectorAll('.close-preview-btn').forEach(btn => {
+                btn.onclick = () => {
+                    modal.remove();
+                    document.removeEventListener('keydown', handleEsc);
+                };
+            });
+            
+            // 复制代码按钮
+            footer.querySelector('.copy-preview-btn').onclick = () => {
+                navigator.clipboard.writeText(codeContent).then(() => {
+                    showToast('✅ 代码已复制到剪贴板');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请查看Console');
+                });
+            };
+            
+            // 下载代码按钮
+            footer.querySelector('.download-preview-btn').onclick = () => {
+                downloadCode(codeContent, modelName);
+            };
+            
+            modalContent.appendChild(header);
+            modalContent.appendChild(iframeContainer);
+            modalContent.appendChild(footer);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // 按 ESC 键关闭
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
         }
     </script>
 </body>
