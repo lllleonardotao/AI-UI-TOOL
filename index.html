@@ -1441,16 +1441,43 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-                throw new Error('代码生成失败');
+                const errorText = await response.text();
+                console.error('代码生成API错误:', errorText);
+                throw new Error(`代码生成失败: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
+            
+            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                throw new Error('API返回格式错误');
+            }
+            
             let code = data.choices[0].message.content;
+            
+            if (!code || code.trim().length === 0) {
+                throw new Error('生成的代码为空');
+            }
             
             // 提取代码块（如果返回的是 markdown 格式）
             const codeBlockMatch = code.match(/```(?:html|css|javascript|js)?\n([\s\S]*?)```/);
             if (codeBlockMatch) {
                 code = codeBlockMatch[1];
+            }
+            
+            // 确保代码包含基本的HTML结构
+            if (!code.includes('<html') && !code.includes('<!DOCTYPE')) {
+                // 如果没有完整的HTML结构，尝试包装它
+                if (code.includes('<body') || code.includes('<div')) {
+                    code = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated UI</title>
+</head>
+${code.includes('<body') ? code : '<body>' + code + '</body>'}
+</html>`;
+                }
             }
             
             return code;
