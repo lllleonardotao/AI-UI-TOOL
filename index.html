@@ -699,6 +699,52 @@
             updateCharCount();
         });
 
+        // 支持粘贴图片（Cmd+V / Ctrl+V）
+        document.getElementById('promptInput').addEventListener('paste', async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            // 查找图片类型的剪贴板项
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                
+                // 检查是否是图片类型
+                if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault(); // 阻止默认粘贴行为
+                    
+                    const file = item.getAsFile();
+                    if (!file) continue;
+                    
+                    // 检查文件大小（限制 10MB）
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('⚠️ 图片文件大小超过 10MB');
+                        continue;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const imageId = Date.now() + Math.random();
+                        const imageData = {
+                            id: imageId,
+                            data: event.target.result // base64 数据
+                        };
+                        
+                        referenceImages.push(imageData);
+                        renderReferenceImages();
+                        
+                        console.log('✅ 图片已从剪贴板粘贴:', imageId);
+                        
+                        // 显示提示
+                        showToast('✅ 图片已粘贴');
+                    };
+                    reader.onerror = () => {
+                        alert('⚠️ 图片读取失败');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
         function updateCharCount() {
             const input = document.getElementById('promptInput');
             const count = input.value.length;
