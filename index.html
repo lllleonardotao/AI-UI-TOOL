@@ -690,25 +690,6 @@
             updateCostEstimate();
         }
         
-        // 更新已选模型显示
-        function updateSelectedModelsDisplay() {
-            const display = document.getElementById('selectedModelsDisplay');
-            const count = document.getElementById('selectedModelsCount');
-            if (!display || !count) return;
-            
-            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
-            const allModels = Object.keys(MODEL_CONFIGS);
-            const defaultSelected = savedSelected.length === 0 
-                ? allModels.filter(key => MODEL_CONFIGS[key].cost === 0)
-                : savedSelected;
-            
-            const selectedCount = defaultSelected.filter(key => MODEL_CONFIGS[key]).length;
-            count.textContent = selectedCount;
-            
-            if (selectedCount === 0) {
-                display.innerHTML = '<span class="text-red-600">⚠️ 未选择模型，请在设置中选择至少一个模型</span>';
-            }
-        }
 
         // 页面加载时检查API Key
         window.onload = () => {
