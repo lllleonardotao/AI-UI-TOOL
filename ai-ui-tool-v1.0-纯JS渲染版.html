@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI UI Design Comparator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 玻璃态效果 - 增强对比度 */
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+        }
+        
+        .glass-dark {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* 渐变背景 */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        /* 按钮动画 */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* 加载动画 */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 图片卡片 */
+        .image-card {
+            transition: all 0.3s ease;
+        }
+        
+        .image-card:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 隐藏滚动条但保持功能 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="glass rounded-3xl p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">✨ AI UI Design Comparator</h1>
+                    <p class="text-gray-600">一键对比多个AI模型的UI设计生成效果</p>
+                </div>
+                <button onclick="showSettings()" class="glass-dark text-gray-800 font-medium px-4 py-2 rounded-xl hover:bg-white/30 transition">
+                    ⚙️ 设置
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- Left: Input Panel -->
+            <div class="md:col-span-1">
+                <div class="glass rounded-3xl p-6 sticky top-4">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">💬 输入需求</h2>
+                    
+                    <!-- Prompt Input -->
+                    <div class="mb-4">
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">描述你想要的UI界面</label>
+                        <textarea 
+                            id="promptInput"
+                            rows="6"
+                            class="w-full p-4 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                            placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
+                        ></textarea>
+                        <div class="text-gray-500 text-xs mt-1 text-right">
+                            <span id="charCount">0</span>/500
+                        </div>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="mb-4">
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="checkbox" id="model-gemini" class="mr-3" checked>
+                                <span class="text-gray-800 font-medium flex-1">Gemini Image</span>
+                                <span class="text-green-600 text-xs font-bold">免费 🎉</span>
+                            </label>
+                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="checkbox" id="model-flux" class="mr-3" checked>
+                                <span class="text-gray-800 font-medium flex-1">Flux Pro</span>
+                                <span class="text-gray-600 text-xs">$0.05</span>
+                            </label>
+                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="checkbox" id="model-gpt5" class="mr-3" checked>
+                                <span class="text-gray-800 font-medium flex-1">GPT-5 Image</span>
+                                <span class="text-gray-600 text-xs">$0.04</span>
+                            </label>
+                            <label class="flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="checkbox" id="model-claude" class="mr-3" checked>
+                                <span class="text-gray-800 font-medium flex-1">Claude 3.5</span>
+                                <span class="text-gray-600 text-xs">$0.01</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Cost Estimate -->
+                    <div class="glass-dark p-3 rounded-lg mb-4">
+                        <div class="flex justify-between text-gray-700 text-sm font-medium">
+                            <span>预计成本</span>
+                            <span id="costEstimate" class="font-mono">$0.10</span>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button 
+                        onclick="startGeneration()"
+                        id="generateBtn"
+                        class="w-full btn-primary text-white font-bold py-4 rounded-xl"
+                    >
+                        🚀 开始生成
+                    </button>
+
+                    <!-- Quick Templates -->
+                    <div class="mt-4">
+                        <label class="text-gray-600 text-xs font-medium mb-2 block">📌 快速模板</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="useTemplate('login')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">登录页</button>
+                            <button onclick="useTemplate('dashboard')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">仪表盘</button>
+                            <button onclick="useTemplate('profile')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">个人中心</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Results Panel -->
+            <div class="md:col-span-2">
+                <!-- Progress -->
+                <div id="progressSection" class="glass rounded-3xl p-6 mb-6 hidden">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">⏳ 生成进度</h2>
+                    <div class="space-y-3" id="progressList"></div>
+                </div>
+
+                <!-- Results -->
+                <div class="glass rounded-3xl p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">📊 生成结果</h2>
+                    <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Empty State -->
+                        <div class="col-span-2 text-center py-12 text-gray-500">
+                            <div class="text-6xl mb-4">🎨</div>
+                            <p>输入你的需求，点击生成按钮开始创作</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="glass rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">⚙️ 设置</h2>
+            
+            <!-- API Key -->
+            <div class="mb-6">
+                <label class="text-gray-700 text-sm font-medium mb-2 block">OpenRouter API Key</label>
+                <input 
+                    type="password" 
+                    id="apiKeyInput"
+                    class="w-full p-3 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="sk-or-v1-xxxxx..."
+                >
+                <p class="text-gray-600 text-xs mt-2">
+                    没有API Key？<a href="https://openrouter.ai/" target="_blank" class="text-purple-600 font-medium underline">点击注册</a>
+                </p>
+            </div>
+
+            <!-- Custom Models -->
+            <div class="mb-6">
+                <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 自定义模型</label>
+                <div id="customModelsList" class="space-y-2 mb-3">
+                    <!-- Custom models will be added here -->
+                </div>
+                <button onclick="addCustomModel()" class="w-full glass-dark text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-white/30 transition">
+                    ➕ 添加新模型
+                </button>
+            </div>
+
+            <!-- Add Model Form (hidden by default) -->
+            <div id="addModelForm" class="mb-6 glass-dark p-4 rounded-xl hidden">
+                <h3 class="text-gray-800 font-bold mb-3">添加新模型</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-gray-700 text-xs mb-1 block">模型名称</label>
+                        <input type="text" id="newModelName" placeholder="例如：DALL-E 4" 
+                               class="w-full p-2 rounded-lg bg-white/50 border border-gray-300 text-gray-800 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-gray-700 text-xs mb-1 block">模型ID</label>
+                        <input type="text" id="newModelId" placeholder="例如：openai/dall-e-4" 
+                               class="w-full p-2 rounded-lg bg-white/50 border border-gray-300 text-gray-800 text-sm">
+                    </div>
+                    <div>
+                        <label class="text-gray-700 text-xs mb-1 block">成本（每次生成）</label>
+                        <input type="number" id="newModelCost" placeholder="0.00" step="0.01" 
+                               class="w-full p-2 rounded-lg bg-white/50 border border-gray-300 text-gray-800 text-sm">
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="saveCustomModel()" class="flex-1 btn-primary text-white font-medium py-2 rounded-lg">
+                            保存
+                        </button>
+                        <button onclick="cancelAddModel()" class="flex-1 glass text-gray-800 font-medium py-2 rounded-lg hover:bg-white/30">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="saveSettings()" class="flex-1 btn-primary text-white font-bold py-3 rounded-xl">
+                    保存
+                </button>
+                <button onclick="closeSettings()" class="flex-1 glass-dark text-gray-800 font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeImageModal()">
+        <div class="max-w-4xl max-h-[90vh] overflow-auto">
+            <img id="modalImage" src="" class="w-full rounded-2xl">
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1';
+        const MODEL_CONFIGS = {
+            'gemini': {
+                name: 'Gemini Image (免费)',
+                model: 'google/gemini-2.5-flash-image-preview',
+                cost: 0,
+                type: 'image'
+            },
+            'flux': {
+                name: 'Flux Pro',
+                model: 'black-forest-labs/flux.2-pro',
+                cost: 0.05,
+                type: 'image'
+            },
+            'gpt5': {
+                name: 'GPT-5 Image',
+                model: 'openai/gpt-5-image',
+                cost: 0.04,
+                type: 'image'
+            },
+            'claude': {
+                name: 'Claude 3.5 (描述)',
+                model: 'anthropic/claude-3.5-sonnet',
+                cost: 0.01,
+                type: 'text-to-image-desc'
+            }
+        };
+
+        // 模板
+        const TEMPLATES = {
+            login: '极简风格的移动APP登录页面，包含logo、邮箱输入框、密码输入框、登录按钮、忘记密码链接，玻璃态设计，白色背景，圆角元素',
+            dashboard: '现代简约的数据仪表盘界面，包含顶部统计卡片、折线图、饼图、最近活动列表，深色主题，玻璃态效果',
+            profile: '简洁的个人中心页面，顶部头像和用户信息、设置选项列表、退出登录按钮，极简风格，白色背景'
+        };
+
+        // 初始化
+        let apiKey = localStorage.getItem('openrouter_api_key') || '';
+        let currentResults = [];
+        let customModels = JSON.parse(localStorage.getItem('custom_models') || '[]');
+
+        // 页面加载时检查API Key
+        window.onload = () => {
+            if (!apiKey) {
+                showSettings();
+            }
+            updateCharCount();
+            updateCostEstimate();
+            loadCustomModels();
+        };
+
+        // 自定义模型管理
+        function loadCustomModels() {
+            const list = document.getElementById('customModelsList');
+            list.innerHTML = '';
+            
+            customModels.forEach((model, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between glass p-3 rounded-lg';
+                item.innerHTML = `
+                    <div class="flex-1">
+                        <div class="text-gray-800 font-medium">${model.name}</div>
+                        <div class="text-gray-600 text-xs">${model.model}</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-gray-600 text-sm">$${model.cost.toFixed(2)}</span>
+                        <button onclick="deleteCustomModel(${index})" class="text-red-500 hover:text-red-700">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+                
+                // 添加到模型选择列表
+                addModelToSelector(model, `custom-${index}`);
+            });
+        }
+
+        function addModelToSelector(model, key) {
+            // 添加到MODEL_CONFIGS
+            MODEL_CONFIGS[key] = {
+                name: model.name,
+                model: model.model,
+                cost: model.cost,
+                type: 'image'
+            };
+            
+            // 检查是否已存在
+            if (document.getElementById(`model-${key}`)) return;
+            
+            // 添加到UI
+            const container = document.querySelector('.space-y-2');
+            const label = document.createElement('label');
+            label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
+            label.innerHTML = `
+                <input type="checkbox" id="model-${key}" class="mr-3">
+                <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                <span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>
+            `;
+            container.appendChild(label);
+            
+            // 添加事件监听
+            document.getElementById(`model-${key}`).addEventListener('change', updateCostEstimate);
+        }
+
+        function addCustomModel() {
+            document.getElementById('addModelForm').classList.remove('hidden');
+        }
+
+        function cancelAddModel() {
+            document.getElementById('addModelForm').classList.add('hidden');
+            document.getElementById('newModelName').value = '';
+            document.getElementById('newModelId').value = '';
+            document.getElementById('newModelCost').value = '';
+        }
+
+        function saveCustomModel() {
+            const name = document.getElementById('newModelName').value.trim();
+            const modelId = document.getElementById('newModelId').value.trim();
+            const cost = parseFloat(document.getElementById('newModelCost').value) || 0;
+            
+            if (!name || !modelId) {
+                alert('⚠️ 请填写模型名称和ID');
+                return;
+            }
+            
+            const newModel = {
+                name: name,
+                model: modelId,
+                cost: cost
+            };
+            
+            customModels.push(newModel);
+            localStorage.setItem('custom_models', JSON.stringify(customModels));
+            
+            loadCustomModels();
+            cancelAddModel();
+            
+            alert('✅ 模型已添加');
+        }
+
+        function deleteCustomModel(index) {
+            if (!confirm('确定删除这个模型吗？')) return;
+            
+            // 从MODEL_CONFIGS删除
+            delete MODEL_CONFIGS[`custom-${index}`];
+            
+            // 从UI删除
+            const checkbox = document.getElementById(`model-custom-${index}`);
+            if (checkbox) {
+                checkbox.parentElement.remove();
+            }
+            
+            // 从localStorage删除
+            customModels.splice(index, 1);
+            localStorage.setItem('custom_models', JSON.stringify(customModels));
+            
+            // 重新加载
+            loadCustomModels();
+            updateCostEstimate();
+        }
+
+        // 字符计数
+        document.getElementById('promptInput').addEventListener('input', (e) => {
+            updateCharCount();
+        });
+
+        function updateCharCount() {
+            const input = document.getElementById('promptInput');
+            const count = input.value.length;
+            document.getElementById('charCount').textContent = count;
+            if (count > 500) {
+                input.value = input.value.substring(0, 500);
+            }
+        }
+
+        // 成本估算
+        function updateCostEstimate() {
+            let total = 0;
+            for (let key in MODEL_CONFIGS) {
+                const checkbox = document.getElementById(`model-${key}`);
+                if (checkbox && checkbox.checked) {
+                    total += MODEL_CONFIGS[key].cost;
+                }
+            }
+            document.getElementById('costEstimate').textContent = `$${total.toFixed(2)}`;
+        }
+
+        // 监听模型选择变化
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', updateCostEstimate);
+        });
+
+        // 设置相关
+        function showSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            document.getElementById('settingsModal').classList.add('flex');
+            document.getElementById('apiKeyInput').value = apiKey;
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            document.getElementById('settingsModal').classList.remove('flex');
+        }
+
+        function saveSettings() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (key) {
+                apiKey = key;
+                localStorage.setItem('openrouter_api_key', key);
+                closeSettings();
+                alert('✅ API Key已保存');
+            } else {
+                alert('⚠️ 请输入有效的API Key');
+            }
+        }
+
+        // 模板相关
+        function useTemplate(type) {
+            document.getElementById('promptInput').value = TEMPLATES[type];
+            updateCharCount();
+        }
+
+        // 生成相关
+        async function startGeneration() {
+            // 验证
+            if (!apiKey) {
+                alert('⚠️ 请先配置OpenRouter API Key');
+                showSettings();
+                return;
+            }
+
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                alert('⚠️ 请输入UI设计需求');
+                return;
+            }
+
+            // 获取选中的模型
+            const selectedModels = [];
+            for (let key in MODEL_CONFIGS) {
+                const checkbox = document.getElementById(`model-${key}`);
+                if (checkbox && checkbox.checked) {
+                    selectedModels.push(key);
+                }
+            }
+
+            if (selectedModels.length === 0) {
+                alert('⚠️ 请至少选择一个模型');
+                return;
+            }
+
+            // 禁用按钮
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.textContent = '🔄 生成中...';
+
+            // 显示进度区域
+            document.getElementById('progressSection').classList.remove('hidden');
+            document.getElementById('progressList').innerHTML = '';
+
+            // 清空结果
+            currentResults = [];
+            document.getElementById('resultsGrid').innerHTML = '';
+
+            // 优化Prompt（加入UI设计约束）
+            const optimizedPrompt = `Create a clean, modern mobile app UI design.
+
+User requirements: ${prompt}
+
+Design constraints:
+- Style: flat design, minimalist, professional interface
+- Platform: mobile app (iOS/Android)
+- Layout: clear visual hierarchy, proper spacing
+- Elements: realistic UI components (buttons, inputs, cards)
+- Colors: harmonious color scheme
+- Output: high-fidelity UI mockup, NOT illustration
+
+Avoid: 3D elements, realistic photos, cartoon style`;
+
+            // 并发调用所有模型
+            const promises = selectedModels.map(modelKey => 
+                generateWithModel(modelKey, optimizedPrompt)
+            );
+
+            // 等待所有完成
+            await Promise.allSettled(promises);
+
+            // 恢复按钮
+            btn.disabled = false;
+            btn.textContent = '🚀 开始生成';
+
+            // 隐藏进度
+            setTimeout(() => {
+                document.getElementById('progressSection').classList.add('hidden');
+            }, 2000);
+        }
+
+        async function generateWithModel(modelKey, prompt) {
+            const config = MODEL_CONFIGS[modelKey];
+            
+            // 添加进度项
+            addProgressItem(modelKey, 'pending');
+
+            try {
+                let imageUrl;
+                
+                if (config.type === 'image') {
+                    // 直接生成图片的模型（Gemini, Flux, GPT-5）
+                    imageUrl = await generateImage(config.model, prompt);
+                } else {
+                    // Claude：生成描述后用免费的Gemini生成图
+                    const description = await generateDescription(config.model, prompt);
+                    imageUrl = await generateImage('google/gemini-2.5-flash-image-preview', description);
+                }
+
+                // 成功
+                updateProgressItem(modelKey, 'success');
+                addResultCard(config.name, imageUrl, config.cost, false);
+                
+            } catch (error) {
+                console.error(`${config.name} 生成失败:`, error);
+                updateProgressItem(modelKey, 'error', error.message);
+                
+                // 添加错误卡片（不会消失）
+                addResultCard(config.name, '', config.cost, true, error.message);
+            }
+        }
+
+        async function generateImage(model, prompt) {
+            console.log('🚀 Calling model:', model);
+            console.log('📝 Prompt:', prompt.substring(0, 100) + '...');
+            
+            const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'AI UI Design Comparator'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    modalities: ["image", "text"],
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('❌ API Error:', error);
+                throw new Error(error.error?.message || '生成失败');
+            }
+
+            const data = await response.json();
+            console.log('✅ Full API Response:', JSON.stringify(data, null, 2));
+            
+            const message = data.choices?.[0]?.message;
+            if (!message) {
+                throw new Error('API响应格式错误：没有message');
+            }
+            
+            // 方法1: 检查images数组
+            if (message.images && message.images.length > 0) {
+                console.log('📸 Found images array, length:', message.images.length);
+                const imageData = message.images[0];
+                
+                // images[0]可能是字符串
+                if (typeof imageData === 'string') {
+                    console.log('✅ Image is string, first 50 chars:', imageData.substring(0, 50));
+                    return imageData;
+                }
+                
+                // images[0]可能是对象 {url: "..."}
+                if (typeof imageData === 'object') {
+                    console.log('✅ Image is object:', Object.keys(imageData));
+                    if (imageData.url) return imageData.url;
+                    if (imageData.data) return imageData.data;
+                    if (imageData.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
+                }
+            }
+            
+            // 方法2: 检查content (Gemini/GPT格式)
+            if (message.content) {
+                console.log('📝 Found content, type:', typeof message.content);
+                
+                // content可能是数组
+                if (Array.isArray(message.content)) {
+                    console.log('✅ Content is array, length:', message.content.length);
+                    for (let i = 0; i < message.content.length; i++) {
+                        const item = message.content[i];
+                        console.log(`Content[${i}] type:`, item.type);
+                        console.log(`Content[${i}] keys:`, Object.keys(item));
+                        
+                        // 重点！Gemini的格式
+                        if (item.type === 'image_url') {
+                            console.log('🎯 Found image_url type!');
+                            const imageUrl = item.image_url;
+                            console.log('image_url value type:', typeof imageUrl);
+                            console.log('image_url keys:', imageUrl && typeof imageUrl === 'object' ? Object.keys(imageUrl) : 'N/A');
+                            
+                            // imageUrl 是字符串
+                            if (typeof imageUrl === 'string') {
+                                console.log('✅ image_url is direct string');
+                                console.log('String length:', imageUrl.length);
+                                console.log('First 100 chars:', imageUrl.substring(0, 100));
+                                console.log('🎉 RETURNING IMAGE URL (string)');
+                                return imageUrl;
+                            }
+                            
+                            // imageUrl 是对象 {url: "..."}
+                            if (imageUrl && typeof imageUrl === 'object' && imageUrl.url) {
+                                console.log('✅ image_url.url exists');
+                                console.log('url type:', typeof imageUrl.url);
+                                console.log('url length:', imageUrl.url.length);
+                                console.log('First 100 chars:', imageUrl.url.substring(0, 100));
+                                console.log('🎉 RETURNING IMAGE URL (object.url)');
+                                return imageUrl.url;
+                            }
+                            
+                            console.warn('⚠️ image_url found but format unknown:', imageUrl);
+                        }
+                        
+                        // 类型2: image
+                        if (item.type === 'image') {
+                            console.log('✅ Found image type');
+                            if (item.url) {
+                                console.log('🎉 RETURNING item.url');
+                                return item.url;
+                            }
+                            if (item.data) {
+                                console.log('🎉 RETURNING item.data');
+                                return item.data;
+                            }
+                            if (item.source && item.source.data) {
+                                console.log('🎉 RETURNING item.source.data');
+                                return item.source.data;
+                            }
+                        }
+                    }
+                }
+                
+                // content是字符串
+                if (typeof message.content === 'string') {
+                    console.log('Content is string, trying to extract URL');
+                    const url = extractImageUrl(message.content);
+                    if (url) {
+                        console.log('✅ Extracted URL from string content');
+                        console.log('🎉 RETURNING extracted URL');
+                        return url;
+                    }
+                }
+            }
+            
+            // 方法3: 检查其他可能的字段
+            if (message.image) {
+                console.log('✅ Found message.image field');
+                return message.image;
+            }
+            
+            if (message.image_url) {
+                console.log('✅ Found message.image_url field');
+                return message.image_url;
+            }
+            
+            // 没找到图片
+            console.error('❌ No image found in response. Available fields:', Object.keys(message));
+            console.error('Full message:', JSON.stringify(message, null, 2));
+            throw new Error('模型返回了数据，但没有找到图片。可能这个模型不支持图像生成，或返回格式不兼容。');
+        }
+
+        // 图片URL解析器
+        function extractImageUrl(text) {
+            // 方法1: Markdown格式 ![](url)
+            let match = text.match(/!\[.*?\]\((https?:\/\/\S+?\.(?:png|jpg|jpeg|webp))\)/i);
+            if (match) return match[1];
+            
+            // 方法2: 纯URL
+            match = text.match(/(https?:\/\/\S+?\.(?:png|jpg|jpeg|webp))/i);
+            if (match) return match[1];
+            
+            // 方法3: 任何https链接（最后尝试）
+            match = text.match(/(https?:\/\/[^\s<>"]+)/i);
+            if (match) return match[1];
+            
+            return null;
+        }
+
+        async function generateDescription(model, prompt) {
+            const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'AI UI Design Comparator'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: `Based on this UI requirement, create a detailed description for image generation:\n\n${prompt}\n\nProvide a concise, visual description focusing on layout, colors, and UI elements.`
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('描述生成失败');
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        // 进度相关
+        function addProgressItem(modelKey, status) {
+            const config = MODEL_CONFIGS[modelKey];
+            const item = document.createElement('div');
+            item.id = `progress-${modelKey}`;
+            item.className = 'flex items-center glass-dark p-3 rounded-lg';
+            item.innerHTML = `
+                <div class="spinner mr-3"></div>
+                <span class="text-gray-800 font-medium flex-1">${config.name}</span>
+                <span class="text-gray-600 text-sm">生成中...</span>
+            `;
+            document.getElementById('progressList').appendChild(item);
+        }
+
+        function updateProgressItem(modelKey, status, message = '') {
+            const item = document.getElementById(`progress-${modelKey}`);
+            if (!item) return;
+
+            if (status === 'success') {
+                item.innerHTML = `
+                    <span class="text-green-600 text-xl mr-3">✓</span>
+                    <span class="text-gray-800 font-medium flex-1">${MODEL_CONFIGS[modelKey].name}</span>
+                    <span class="text-green-600 text-sm font-medium">完成</span>
+                `;
+            } else if (status === 'error') {
+                item.innerHTML = `
+                    <span class="text-red-600 text-xl mr-3">✗</span>
+                    <span class="text-gray-800 font-medium flex-1">${MODEL_CONFIGS[modelKey].name}</span>
+                    <span class="text-red-600 text-sm">${message || '失败'}</span>
+                `;
+            }
+        }
+
+        // 结果相关
+        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '') {
+            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg });
+            
+            const card = document.createElement('div');
+            card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
+            
+            if (isError) {
+                // 错误卡片
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'aspect-square bg-red-50 flex items-center justify-center p-6';
+                errorDiv.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-4xl mb-2">❌</div>
+                        <div class="text-red-600 text-sm font-medium mb-2">生成失败</div>
+                        <div class="text-gray-600 text-xs">${errorMsg}</div>
+                    </div>
+                `;
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'p-4';
+                infoDiv.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-800 font-semibold">${modelName}</span>
+                        <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                    </div>
+                    <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
+                        🔄 重试
+                    </button>
+                `;
+                infoDiv.querySelector('button').onclick = () => retryModel(modelName);
+                
+                card.appendChild(errorDiv);
+                card.appendChild(infoDiv);
+            } else {
+                console.log('📦 Creating result card for:', modelName);
+                console.log('📦 ImageURL type:', typeof imageUrl);
+                console.log('📦 ImageURL length:', imageUrl ? imageUrl.length : 0);
+                console.log('📦 ImageURL preview:', imageUrl ? imageUrl.substring(0, 100) : 'null');
+                
+                // 检查是否是有效的图片数据
+                const isBase64 = imageUrl && imageUrl.startsWith('data:image');
+                const isHttpUrl = imageUrl && imageUrl.startsWith('http');
+                
+                console.log('📦 isBase64:', isBase64);
+                console.log('📦 isHttpUrl:', isHttpUrl);
+                
+                if (isBase64 || isHttpUrl) {
+                    // 使用JavaScript创建图片元素，避免HTML字符串问题
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'aspect-square bg-gray-100 relative';
+                    
+                    const img = document.createElement('img');
+                    img.className = 'w-full h-full object-cover';
+                    img.alt = modelName;
+                    
+                    // 图片加载成功
+                    img.onload = function() {
+                        console.log('✅ 图片加载成功:', modelName);
+                    };
+                    
+                    // 图片加载失败
+                    img.onerror = function() {
+                        console.error('❌ 图片加载失败:', modelName);
+                        imgContainer.innerHTML = `
+                            <div class="w-full h-full flex flex-col items-center justify-center p-4">
+                                <div class="text-4xl mb-2">⚠️</div>
+                                <div class="text-gray-600 text-xs text-center mb-2">图片加载失败</div>
+                                <div class="text-gray-500 text-xs text-center mb-2">数据长度: ${imageUrl.length}</div>
+                                <button class="text-xs text-blue-600 underline" onclick="copyToClipboard('${modelName}')">
+                                    复制base64
+                                </button>
+                            </div>
+                        `;
+                    };
+                    
+                    // 设置src - 关键！
+                    img.src = imageUrl;
+                    
+                    imgContainer.appendChild(img);
+                    
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'p-4';
+                    infoDiv.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-800 font-semibold">${modelName}</span>
+                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                ⬇️ 下载
+                            </button>
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                🔍 数据
+                            </button>
+                        </div>
+                    `;
+                    
+                    const buttons = infoDiv.querySelectorAll('button');
+                    buttons[0].onclick = (e) => {
+                        e.stopPropagation();
+                        downloadImage(imageUrl, modelName);
+                    };
+                    buttons[1].onclick = (e) => {
+                        e.stopPropagation();
+                        showRawData(modelName);
+                    };
+                    
+                    card.appendChild(imgContainer);
+                    card.appendChild(infoDiv);
+                    
+                    card.style.cursor = 'pointer';
+                    card.onclick = () => showImageModal(imageUrl);
+                    
+                } else {
+                    // 不是图片格式
+                    console.warn('⚠️ 返回的不是图片格式');
+                    const dataDiv = document.createElement('div');
+                    dataDiv.className = 'aspect-square bg-blue-50 flex items-center justify-center p-6 overflow-auto';
+                    dataDiv.innerHTML = `
+                        <div class="text-center w-full">
+                            <div class="text-4xl mb-2">📄</div>
+                            <div class="text-blue-600 text-sm font-medium mb-2">返回了数据</div>
+                            <div class="text-gray-600 text-xs mb-3">但不是图片格式</div>
+                            <div class="bg-white/50 p-2 rounded text-left">
+                                <pre class="text-xs overflow-auto max-h-32">${imageUrl ? imageUrl.substring(0, 200) : '无数据'}</pre>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'p-4';
+                    infoDiv.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-800 font-semibold">${modelName}</span>
+                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                        </div>
+                        <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
+                            🔍 查看完整数据
+                        </button>
+                    `;
+                    infoDiv.querySelector('button').onclick = () => showRawData(modelName);
+                    
+                    card.appendChild(dataDiv);
+                    card.appendChild(infoDiv);
+                }
+            }
+            
+            document.getElementById('resultsGrid').appendChild(card);
+        }
+        
+        function showRawData(modelName) {
+            const result = currentResults.find(r => r.modelName === modelName);
+            if (!result) {
+                alert('未找到数据');
+                return;
+            }
+            
+            const data = result.imageUrl;
+            const len = data ? data.length : 0;
+            
+            console.log('='.repeat(50));
+            console.log('模型:', modelName);
+            console.log('数据类型:', typeof data);
+            console.log('数据长度:', len);
+            console.log('完整数据:', data);
+            console.log('='.repeat(50));
+            
+            alert(`模型: ${modelName}\n\n数据长度: ${len} 字符\n\n前500个字符:\n${data ? data.substring(0, 500) : '无数据'}\n\n完整数据已输出到Console`);
+        }
+        
+        function copyToClipboard(modelName) {
+            const result = currentResults.find(r => r.modelName === modelName);
+            if (!result || !result.imageUrl) {
+                alert('无数据可复制');
+                return;
+            }
+            
+            navigator.clipboard.writeText(result.imageUrl).then(() => {
+                alert('Base64已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('复制失败，请查看Console');
+            });
+        }
+
+        function retryModel(modelName) {
+            // 找到对应的模型key
+            const modelKey = Object.keys(MODEL_CONFIGS).find(
+                key => MODEL_CONFIGS[key].name === modelName
+            );
+            
+            if (!modelKey) {
+                alert('模型未找到');
+                return;
+            }
+            
+            // 获取当前prompt
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                alert('请输入UI设计需求');
+                return;
+            }
+            
+            // 重新生成
+            const optimizedPrompt = `Create a clean, modern mobile app UI design.
+
+User requirements: ${prompt}
+
+Design constraints:
+- Style: flat design, minimalist, professional interface
+- Platform: mobile app (iOS/Android)
+- Layout: clear visual hierarchy, proper spacing
+- Elements: realistic UI components (buttons, inputs, cards)
+- Colors: harmonious color scheme
+- Output: high-fidelity UI mockup, NOT illustration
+
+Avoid: 3D elements, realistic photos, cartoon style`;
+            
+            generateWithModel(modelKey, optimizedPrompt);
+        }
+
+        function showImageModal(imageUrl) {
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('imageModal').classList.remove('hidden');
+            document.getElementById('imageModal').classList.add('flex');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+            document.getElementById('imageModal').classList.remove('flex');
+        }
+
+        async function downloadImage(url, modelName) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const downloadUrl = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `${modelName}_${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
+            } catch (error) {
+                console.error('下载失败:', error);
+                alert('⚠️ 下载失败，请右键保存图片');
+            }
+        }
+    </script>
+</body>
+</html>
