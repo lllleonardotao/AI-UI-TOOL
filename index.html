@@ -2441,7 +2441,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                 return `<div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-xs">❌</div>`;
                             } else if (r.thumbnail) {
                                 // 显示真实图片缩略图
-                                return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}">`;
+                                return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}" data-full-image="${r.imageUrl ? escapeHtml(r.imageUrl) : ''}">`;
+                            } else if (r.imageUrl && (r.imageUrl.startsWith('data:image') || r.imageUrl.startsWith('http'))) {
+                                // 如果有完整图片但没有缩略图，直接使用完整图片（缩小显示）
+                                return `<img src="${r.imageUrl}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}" data-full-image="${escapeHtml(r.imageUrl)}">`;
                             } else if (r.codeContent) {
                                 // 显示代码预览缩略图（使用iframe缩放显示）
                                 const codePreviewId = `code-preview-${item.id}-${idx}`;
