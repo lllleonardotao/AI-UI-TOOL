@@ -1412,22 +1412,123 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             document.getElementById('imageModal').classList.remove('flex');
         }
 
+        /**
+         * 下载图片，去除背景并裁剪到内容边缘
+         */
         async function downloadImage(url, modelName) {
             try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const downloadUrl = URL.createObjectURL(blob);
+                // 创建图片对象
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
                 
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = `${modelName}_${Date.now()}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(downloadUrl);
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = url;
+                });
+                
+                // 创建 Canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // 绘制图片
+                ctx.drawImage(img, 0, 0);
+                
+                // 获取图片数据
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // 检测内容边界（去除白色/浅色背景）
+                let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+                let hasContent = false;
+                
+                // 遍历像素，找到内容边界
+                for (let y = 0; y < canvas.height; y++) {
+                    for (let x = 0; x < canvas.width; x++) {
+                        const idx = (y * canvas.width + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+                        const a = data[idx + 3];
+                        
+                        // 检测非背景像素（不是纯白或接近白色，且不透明）
+                        // 白色背景通常是 RGB(240,240,240) 以上或接近透明
+                        const isBackground = (r > 240 && g > 240 && b > 240) || a < 10;
+                        
+                        if (!isBackground) {
+                            hasContent = true;
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        }
+                    }
+                }
+                
+                // 如果找到内容，裁剪到边界；否则使用原图
+                let finalCanvas = canvas;
+                if (hasContent && (minX < maxX && minY < maxY)) {
+                    const width = maxX - minX + 1;
+                    const height = maxY - minY + 1;
+                    
+                    // 创建新 Canvas，只包含内容区域
+                    finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = width;
+                    finalCanvas.height = height;
+                    const finalCtx = finalCanvas.getContext('2d');
+                    
+                    // 绘制裁剪后的内容（带透明背景）
+                    finalCtx.drawImage(
+                        canvas,
+                        minX, minY, width, height,
+                        0, 0, width, height
+                    );
+                } else {
+                    // 如果没有检测到边界，创建透明背景版本
+                    finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = canvas.width;
+                    finalCanvas.height = canvas.height;
+                    const finalCtx = finalCanvas.getContext('2d');
+                    
+                    // 绘制原图
+                    finalCtx.drawImage(img, 0, 0);
+                }
+                
+                // 转换为 Blob 并下载
+                finalCanvas.toBlob((blob) => {
+                    if (!blob) {
+                        throw new Error('无法创建图片');
+                    }
+                    
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `${modelName}_${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                }, 'image/png');
+                
             } catch (error) {
                 console.error('下载失败:', error);
-                alert('⚠️ 下载失败，请右键保存图片');
+                // 如果处理失败，尝试直接下载原图
+                try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = `${modelName}_${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                } catch (fallbackError) {
+                    alert('⚠️ 下载失败，请右键保存图片');
+                }
             }
         }
 
@@ -1446,27 +1547,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 const existingHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
                 console.log('🔵 现有历史记录数量:', existingHistory.length);
                 
-                // 处理图片数据：base64 图片太大，不保存完整数据到历史记录
-                // 只保存元数据和标记，完整图片需要重新生成
-                const processedResults = results.map(r => {
-                    const result = {
-                        modelName: r.modelName,
-                        cost: r.cost,
-                        isError: r.isError,
-                        errorMsg: r.errorMsg,
-                        hasImage: !!(r.imageUrl && !r.isError),
-                        imageUrl: null // 不保存完整图片数据，节省存储空间
-                    };
-                    
-                    // 如果是 HTTP URL，可以保存（通常很小）
-                    if (r.imageUrl && !r.isError && r.imageUrl.startsWith('http')) {
-                        result.imageUrl = r.imageUrl;
-                    }
-                    // base64 图片不保存，因为太大（可能几MB）
-                    // 用户可以通过"重新生成"功能重新获取图片
-                    
-                    return result;
-                });
+                // 历史记录中不保存任何图片数据信息，只保存基本元数据
+                const processedResults = results.map(r => ({
+                    modelName: r.modelName,
+                    cost: r.cost,
+                    isError: r.isError,
+                    errorMsg: r.errorMsg
+                    // 不保存任何图片相关信息（imageUrl, hasImage等）
+                }));
                 
                 const historyItem = {
                     id: Date.now(),
@@ -1476,9 +1564,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     platformText: platform === 'mobile' ? '手机端' : 'PC端',
                     selectedModels: selectedModels,
                     results: processedResults,
-                    totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0),
-                    // 标记：历史记录中的图片数据已压缩，完整数据需要重新生成
-                    note: '图片数据已压缩以节省存储空间'
+                    totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
                 };
                 
                 console.log('🔵 创建历史记录项:', {
@@ -1663,14 +1749,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         ${item.results.slice(0, 4).map((r, idx) => {
                             if (r.isError) {
                                 return `<div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-xs">❌</div>`;
-                            } else if (r.imageUrl && r.imageUrl.startsWith('http')) {
-                                // HTTP URL 可以显示
-                                return `<img src="${r.imageUrl}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" data-image-url="${r.imageUrl.replace(/"/g, '&quot;')}">`;
-                            } else if (r.hasImage) {
-                                // 有图片但数据未保存，显示占位符
-                                return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs" title="图片数据未保存，点击重新生成">📷</div>`;
+                            } else {
+                                // 只显示模型名称，不显示图片
+                                return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs text-center px-1" title="${r.modelName}">${r.modelName.substring(0, 8)}</div>`;
                             }
-                            return '';
                         }).join('')}
                         ${item.results.length > 4 ? `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 text-xs">+${item.results.length - 4}</div>` : ''}
                     </div>
@@ -1678,13 +1760,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 historyList.appendChild(historyCard);
                 
-                // 为缩略图添加点击事件
-                const thumbnails = historyCard.querySelectorAll(`#history-thumbnails-${item.id} img`);
-                thumbnails.forEach(img => {
-                    img.addEventListener('click', () => {
-                        showImageModal(img.getAttribute('data-image-url'));
-                    });
-                });
+                // 历史记录中不再显示图片缩略图，无需添加点击事件
             });
         }
 
@@ -1699,11 +1775,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             currentResults = [];
             document.getElementById('resultsGrid').innerHTML = '';
             
-            // 加载历史结果
+            // 加载历史结果 - 历史记录中不包含图片数据，只显示模型信息
             item.results.forEach(result => {
-                // 如果历史记录中没有完整图片数据，显示提示
-                if (result.hasImage && !result.imageUrl) {
-                    // 创建一个占位符卡片，提示用户需要重新生成
+                if (result.isError) {
+                    // 错误结果
+                    addResultCard(result.modelName, '', result.cost, true, result.errorMsg);
+                } else {
+                    // 成功结果，但图片数据未保存，显示提示
                     const card = document.createElement('div');
                     card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
                     card.innerHTML = `
@@ -1711,7 +1789,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             <div class="text-center">
                                 <div class="text-4xl mb-2">📷</div>
                                 <div class="text-blue-600 text-sm font-medium mb-2">图片数据未保存</div>
-                                <div class="text-gray-600 text-xs mb-3">为节省存储空间，历史记录中不包含完整图片</div>
+                                <div class="text-gray-600 text-xs mb-3">历史记录中不包含图片数据</div>
                                 <button class="glass text-blue-600 font-medium text-sm px-4 py-2 rounded-lg hover:bg-white/30 transition">
                                     🔄 重新生成
                                 </button>
@@ -1729,8 +1807,6 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         regenerateFromHistory(historyId);
                     };
                     document.getElementById('resultsGrid').appendChild(card);
-                } else {
-                    addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg);
                 }
             });
             
