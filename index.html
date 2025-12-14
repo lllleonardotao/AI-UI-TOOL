@@ -235,15 +235,23 @@
                 </p>
             </div>
 
-            <!-- Custom Models -->
+            <!-- Model Selection -->
             <div class="mb-6">
-                <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 自定义模型</label>
-                <div id="customModelsList" class="space-y-2 mb-3">
-                    <!-- Custom models will be added here -->
+                <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型（至少选择一个）</label>
+                <div class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-yellow-800 text-xs">💡 至少需要选择一个模型才能生成内容</p>
+                </div>
+                <div id="settingsModelList" class="space-y-2 max-h-96 overflow-y-auto mb-3">
+                    <!-- 模型列表将在这里动态生成 -->
                 </div>
                 <button onclick="addCustomModel()" class="w-full glass-dark text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-white/30 transition">
-                    ➕ 添加新模型
+                    ➕ 添加自定义模型
                 </button>
+            </div>
+            
+            <!-- Custom Models (hidden, moved to main model list) -->
+            <div id="customModelsList" class="hidden">
+                <!-- Custom models will be added here -->
             </div>
 
             <!-- Add Model Form (hidden by default) -->
@@ -571,49 +579,124 @@
             }
         }
 
-        // 加载模型选择列表（按价格从低到高排序，默认勾选免费模型）
-        function loadModelSelectionList() {
-            const container = document.getElementById('modelSelectionList');
+        // 加载设置中的模型列表
+        function loadSettingsModelList() {
+            const container = document.getElementById('settingsModelList');
             if (!container) return;
             
             container.innerHTML = '';
             
+            // 获取保存的选中模型
+            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
+            
             // 获取所有模型并排序（按价格从低到高）
             const sortedModels = Object.keys(MODEL_CONFIGS)
-                .filter(key => !key.startsWith('custom-')) // 排除自定义模型（它们会单独加载）
                 .map(key => ({
                     key: key,
                     ...MODEL_CONFIGS[key]
                 }))
                 .sort((a, b) => a.cost - b.cost); // 按价格从低到高排序
             
+            // 如果没有保存的选中模型，默认选中免费模型
+            const defaultSelected = savedSelected.length === 0 
+                ? sortedModels.filter(m => m.cost === 0).map(m => m.key)
+                : savedSelected;
+            
             // 生成模型选择项
             sortedModels.forEach(model => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
                 
-                // 默认只勾选免费模型
-                const isChecked = model.cost === 0;
+                // 检查是否已选中
+                const isChecked = defaultSelected.includes(model.key);
+                
+                const costDisplay = model.cost === 0 
+                    ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
+                    : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
+                
+                const typeDisplay = model.type === 'code' 
+                    ? '<span class="text-blue-600 text-xs ml-2">💻 代码</span>'
+                    : model.type === 'image'
+                    ? '<span class="text-purple-600 text-xs ml-2">🖼️ 图片</span>'
+                    : '<span class="text-gray-600 text-xs ml-2">📝 描述</span>';
+                
+                label.innerHTML = `
+                    <input type="checkbox" id="settings-model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
+                    <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                    ${typeDisplay}
+                    ${costDisplay}
+                `;
+                
+                container.appendChild(label);
+            });
+        }
+        
+        // 加载主界面的模型列表（只显示已选中的模型）
+        function loadModelSelectionList() {
+            const container = document.getElementById('modelSelectionList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // 获取保存的选中模型
+            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
+            
+            // 如果没有保存的选中模型，默认选中免费模型
+            const allModels = Object.keys(MODEL_CONFIGS);
+            const defaultSelected = savedSelected.length === 0 
+                ? allModels.filter(key => MODEL_CONFIGS[key].cost === 0)
+                : savedSelected;
+            
+            // 只显示已选中的模型
+            const selectedModels = defaultSelected
+                .filter(key => MODEL_CONFIGS[key]) // 确保模型存在
+                .map(key => ({
+                    key: key,
+                    ...MODEL_CONFIGS[key]
+                }))
+                .sort((a, b) => a.cost - b.cost);
+            
+            // 生成模型选择项（只读显示）
+            selectedModels.forEach(model => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center glass-dark p-3 rounded-lg';
                 
                 const costDisplay = model.cost === 0 
                     ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
                     : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
                 
                 label.innerHTML = `
-                    <input type="checkbox" id="model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
+                    <input type="checkbox" id="model-${model.key}" class="mr-3" checked disabled>
                     <span class="text-gray-800 font-medium flex-1">${model.name}</span>
                     ${costDisplay}
                 `;
                 
-                // 添加事件监听
-                const checkbox = label.querySelector('input');
-                checkbox.addEventListener('change', updateCostEstimate);
-                
                 container.appendChild(label);
             });
             
-            // 更新成本估算
+            // 更新成本估算和显示
             updateCostEstimate();
+            updateSelectedModelsDisplay();
+        }
+        
+        // 更新已选模型显示
+        function updateSelectedModelsDisplay() {
+            const display = document.getElementById('selectedModelsDisplay');
+            const count = document.getElementById('selectedModelsCount');
+            if (!display || !count) return;
+            
+            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
+            const allModels = Object.keys(MODEL_CONFIGS);
+            const defaultSelected = savedSelected.length === 0 
+                ? allModels.filter(key => MODEL_CONFIGS[key].cost === 0)
+                : savedSelected;
+            
+            const selectedCount = defaultSelected.filter(key => MODEL_CONFIGS[key]).length;
+            count.textContent = selectedCount;
+            
+            if (selectedCount === 0) {
+                display.innerHTML = '<span class="text-red-600">⚠️ 未选择模型，请在设置中选择至少一个模型</span>';
+            }
         }
 
         // 页面加载时检查API Key
@@ -717,9 +800,10 @@
             localStorage.setItem('custom_models', JSON.stringify(customModels));
             
             loadCustomModels();
+            loadSettingsModelList(); // 刷新设置中的模型列表
             cancelAddModel();
             
-            alert('✅ 模型已添加');
+            alert('✅ 模型已添加，请在设置中勾选以使用');
         }
 
         function deleteCustomModel(index) {
@@ -825,6 +909,7 @@
             document.getElementById('settingsModal').classList.remove('hidden');
             document.getElementById('settingsModal').classList.add('flex');
             document.getElementById('apiKeyInput').value = apiKey;
+            loadSettingsModelList(); // 加载设置中的模型列表
         }
 
         function closeSettings() {
@@ -842,6 +927,25 @@
                 const debugCheckbox = document.getElementById('debugMode');
                 debugMode = debugCheckbox.checked;
                 localStorage.setItem('debug_mode', debugMode.toString());
+                
+                // 保存选中的模型
+                const selectedModels = [];
+                const checkboxes = document.querySelectorAll('#settingsModelList input[type="checkbox"]:checked');
+                checkboxes.forEach(cb => {
+                    selectedModels.push(cb.id.replace('settings-model-', ''));
+                });
+                
+                // 验证至少选择一个模型
+                if (selectedModels.length === 0) {
+                    alert('⚠️ 请至少选择一个模型');
+                    return;
+                }
+                
+                localStorage.setItem('selected_models', JSON.stringify(selectedModels));
+                
+                // 更新主界面显示
+                updateSelectedModelsDisplay();
+                loadModelSelectionList(); // 重新加载主界面的模型列表
 
                 closeSettings();
                 alert('✅ 设置已保存');
@@ -872,16 +976,18 @@
             }
 
             // 获取选中的模型
-            const selectedModels = [];
-            for (let key in MODEL_CONFIGS) {
-                const checkbox = document.getElementById(`model-${key}`);
-                if (checkbox && checkbox.checked) {
-                    selectedModels.push(key);
-                }
-            }
+            // 从localStorage获取选中的模型
+            const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
+            const allModels = Object.keys(MODEL_CONFIGS);
+            const defaultSelected = savedSelected.length === 0 
+                ? allModels.filter(key => MODEL_CONFIGS[key].cost === 0)
+                : savedSelected;
+            
+            const selectedModels = defaultSelected.filter(key => MODEL_CONFIGS[key]);
 
             if (selectedModels.length === 0) {
-                alert('⚠️ 请至少选择一个模型');
+                alert('⚠️ 请至少选择一个模型，请在设置中配置');
+                showSettings();
                 return;
             }
 
