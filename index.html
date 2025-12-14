@@ -113,6 +113,40 @@
                         </div>
                     </div>
 
+                    <!-- Reference Image Upload -->
+                    <div class="mb-4">
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">📷 参考图片（可选）</label>
+                        <div class="space-y-2">
+                            <input 
+                                type="file" 
+                                id="referenceImageInput" 
+                                accept="image/*" 
+                                class="hidden"
+                                onchange="handleImageUpload(event)"
+                            >
+                            <button 
+                                type="button"
+                                onclick="document.getElementById('referenceImageInput').click()"
+                                class="w-full glass-dark text-gray-800 font-medium py-2 px-4 rounded-lg hover:bg-white/30 transition flex items-center justify-center gap-2"
+                            >
+                                <span>📤 上传参考图片</span>
+                            </button>
+                            <div id="referenceImagePreview" class="hidden">
+                                <div class="relative inline-block">
+                                    <img id="referenceImageDisplay" src="" alt="参考图片" class="max-w-full max-h-48 rounded-lg border border-gray-300">
+                                    <button 
+                                        onclick="removeReferenceImage()"
+                                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition"
+                                        title="删除图片"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                                <p class="text-gray-600 text-xs mt-1">图片将作为参考发送给AI模型</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Platform Selection -->
                     <div class="mb-4">
                         <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
@@ -410,6 +444,49 @@
         let customModels = JSON.parse(localStorage.getItem('custom_models') || '[]');
         let debugMode = localStorage.getItem('debug_mode') === 'true';
         let generationHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
+        let referenceImage = null; // 存储参考图片的 base64 数据
+
+        // 处理图片上传
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                alert('⚠️ 请上传图片文件');
+                return;
+            }
+            
+            // 检查文件大小（限制 10MB）
+            if (file.size > 10 * 1024 * 1024) {
+                alert('⚠️ 图片文件大小不能超过 10MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                referenceImage = e.target.result; // base64 数据
+                const preview = document.getElementById('referenceImagePreview');
+                const display = document.getElementById('referenceImageDisplay');
+                
+                display.src = referenceImage;
+                preview.classList.remove('hidden');
+                
+                console.log('✅ 参考图片已上传');
+            };
+            reader.onerror = () => {
+                alert('⚠️ 图片读取失败');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 移除参考图片
+        function removeReferenceImage() {
+            referenceImage = null;
+            document.getElementById('referenceImagePreview').classList.add('hidden');
+            document.getElementById('referenceImageInput').value = '';
+            console.log('🗑️ 参考图片已移除');
+        }
 
         // 调试日志函数
         function debugLog(...args) {
@@ -837,13 +914,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 console.error('生成过程中出错:', error);
             } finally {
                 // 确保按钮状态总是恢复
-                btn.disabled = false;
-                btn.textContent = '🚀 开始生成';
-                
-                // 隐藏进度
-                setTimeout(() => {
-                    document.getElementById('progressSection').classList.add('hidden');
-                }, 2000);
+            btn.disabled = false;
+            btn.textContent = '🚀 开始生成';
+
+            // 隐藏进度
+            setTimeout(() => {
+                document.getElementById('progressSection').classList.add('hidden');
+            }, 2000);
             }
         }
 
@@ -907,12 +984,34 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 : 'desktop web application';
 
             // 根据模型类型构建不同的请求体
+            // 如果有关参考图片，使用多模态格式
+            let content;
+            if (referenceImage) {
+                // 多模态格式：文本 + 图片
+                content = [
+                    {
+                        type: 'text',
+                        text: prompt
+                    },
+                    {
+                        type: 'image_url',
+                        image_url: {
+                            url: referenceImage
+                        }
+                    }
+                ];
+                debugLog('📷 包含参考图片');
+            } else {
+                // 纯文本格式
+                content = prompt;
+            }
+            
             const requestBody = {
                 model: model,
                 messages: [
                     {
                         role: 'user',
-                        content: prompt
+                        content: content
                     }
                 ]
             };
@@ -928,7 +1027,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     : `\n\nIMPORTANT: This must be a DESKTOP WEB APPLICATION UI design with landscape orientation, desktop navigation (top menu or sidebar), and mouse-optimized elements. The layout can be multi-column, NOT mobile-style.`;
                 
                 if (!prompt.includes('IMPORTANT: This must be')) {
-                    requestBody.messages[0].content = `${prompt}${platformEmphasis}`;
+                    const newPrompt = `${prompt}${platformEmphasis}`;
+                    if (referenceImage) {
+                        requestBody.messages[0].content = [
+                            { type: 'text', text: newPrompt },
+                            { type: 'image_url', image_url: { url: referenceImage } }
+                        ];
+                    } else {
+                        requestBody.messages[0].content = newPrompt;
+                    }
                     debugLog('📱 Added explicit platform emphasis for Gemini model:', platform);
                 }
             } else {
@@ -943,7 +1050,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                           prompt.includes('DESKTOP WEB APPLICATION');
                 
                 if (!hasPlatformEmphasis) {
-                    requestBody.messages[0].content = `${prompt}${platformEmphasis}`;
+                    const newPrompt = `${prompt}${platformEmphasis}`;
+                    if (referenceImage) {
+                        requestBody.messages[0].content = [
+                            { type: 'text', text: newPrompt },
+                            { type: 'image_url', image_url: { url: referenceImage } }
+                        ];
+                    } else {
+                        requestBody.messages[0].content = newPrompt;
+                    }
                     debugLog('📱 Added platform emphasis for model:', model, platform);
                 }
             }
@@ -1503,13 +1618,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     }
                     
                     const downloadUrl = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = downloadUrl;
-                    a.download = `${modelName}_${Date.now()}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(downloadUrl);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `${modelName}_${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
                 }, 'image/png');
                 
             } catch (error) {
@@ -1527,7 +1642,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     document.body.removeChild(a);
                     URL.revokeObjectURL(downloadUrl);
                 } catch (fallbackError) {
-                    alert('⚠️ 下载失败，请右键保存图片');
+                alert('⚠️ 下载失败，请右键保存图片');
                 }
             }
         }
@@ -1612,35 +1727,35 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     return result;
                 }));
                 
-                const historyItem = {
-                    id: Date.now(),
-                    timestamp: new Date().toISOString(),
-                    prompt: prompt,
-                    platform: platform,
-                    platformText: platform === 'mobile' ? '手机端' : 'PC端',
-                    selectedModels: selectedModels,
+            const historyItem = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                prompt: prompt,
+                platform: platform,
+                platformText: platform === 'mobile' ? '手机端' : 'PC端',
+                selectedModels: selectedModels,
                     results: processedResults,
-                    totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
-                };
+                totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
+            };
                 
                 console.log('🔵 创建历史记录项:', {
                     id: historyItem.id,
                     resultsCount: historyItem.results.length,
                     results: historyItem.results.map(r => r.modelName)
                 });
-                
-                // 添加到历史记录数组的开头（最新的在前面）
+            
+            // 添加到历史记录数组的开头（最新的在前面）
                 existingHistory.unshift(historyItem);
-                
-                // 限制历史记录数量（最多保存50条）
+            
+            // 限制历史记录数量（最多保存50条）
                 const finalHistory = existingHistory.length > 50 
                     ? existingHistory.slice(0, 50) 
                     : existingHistory;
                 
                 // 更新全局变量
                 generationHistory = finalHistory;
-                
-                // 保存到 localStorage
+            
+            // 保存到 localStorage
                 localStorage.setItem('generation_history', JSON.stringify(finalHistory));
                 
                 // 验证保存是否成功
@@ -1743,7 +1858,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             
             if (filteredHistory.length === 0) {
                 historyList.innerHTML = '';
-                historyEmpty.classList.add('hidden');
+            historyEmpty.classList.add('hidden');
                 if (historyNoResults) historyNoResults.classList.remove('hidden');
                 return;
             }
