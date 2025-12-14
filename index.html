@@ -1460,8 +1460,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                 content: content
                             }
                         ],
-                        // 根据模型类型设置max_tokens，避免402错误
-                        max_tokens: model.includes(':free') ? 16000 : 32000
+                        // 根据模型类型设置max_tokens，降低token消耗以节省credits
+                        max_tokens: model.includes(':free') ? 8000 : 16000
                     }),
                     signal: controller.signal
                 });
