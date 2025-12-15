@@ -96,7 +96,7 @@
         <div class="grid md:grid-cols-3 gap-6">
             <!-- Left: Input Panel -->
             <div class="md:col-span-1">
-                <div class="glass rounded-3xl p-6 sticky top-4">
+                <div class="glass rounded-3xl p-6 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">💬 输入需求</h2>
                     
                     <!-- Prompt Input -->
@@ -105,7 +105,7 @@
                         <div class="relative">
                         <textarea 
                             id="promptInput"
-                            rows="4"
+                            rows="3"
                                 class="w-full p-4 pr-12 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
@@ -141,54 +141,59 @@
                         </div>
                     </div>
 
-                    <!-- Platform Selection -->
+                    <!-- Quick Templates (移到输入框下方) -->
                     <div class="mb-4">
-                        <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
-                        <div class="flex gap-2">
-                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="radio" name="platform" value="mobile" class="mr-2" checked>
-                                <span class="text-gray-800 font-medium">手机端</span>
-                            </label>
-                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="radio" name="platform" value="desktop" class="mr-2">
-                                <span class="text-gray-800 font-medium">PC端</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Model Selection -->
-                    <div class="mb-4">
-                        <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
-                        <div class="space-y-2" id="modelSelectionList">
-                            <!-- 模型列表将在这里动态生成 -->
-                        </div>
-                    </div>
-
-                    <!-- Cost Estimate -->
-                    <div class="glass-dark p-3 rounded-lg mb-4">
-                        <div class="flex justify-between text-gray-700 text-sm font-medium">
-                            <span>预计成本</span>
-                            <span id="costEstimate" class="font-mono">$0.10</span>
-                        </div>
-                    </div>
-
-                    <!-- Generate Button -->
-                    <button 
-                        onclick="startGeneration()"
-                        id="generateBtn"
-                        class="w-full btn-primary text-white font-bold py-4 rounded-xl"
-                    >
-                        🚀 开始生成
-                    </button>
-
-                    <!-- Quick Templates -->
-                    <div class="mt-4">
-                        <label class="text-gray-600 text-xs font-medium mb-2 block">📌 快速模板</label>
                         <div class="flex flex-wrap gap-2">
                             <button onclick="useTemplate('login')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">登录页</button>
                             <button onclick="useTemplate('dashboard')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">仪表盘</button>
                             <button onclick="useTemplate('profile')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">个人中心</button>
                         </div>
+                    </div>
+
+                    <!-- 并排显示：目标平台、选择AI模型、预计成本 -->
+                    <div class="grid grid-cols-1 gap-4 mb-4">
+                        <!-- Platform Selection -->
+                        <div>
+                            <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
+                            <div class="flex gap-2">
+                                <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                    <input type="radio" name="platform" value="mobile" class="mr-2" checked>
+                                    <span class="text-gray-800 font-medium text-sm">手机端</span>
+                                </label>
+                                <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                    <input type="radio" name="platform" value="desktop" class="mr-2">
+                                    <span class="text-gray-800 font-medium text-sm">PC端</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Model Selection -->
+                        <div>
+                            <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
+                            <div class="space-y-2 max-h-48 overflow-y-auto" id="modelSelectionList">
+                                <!-- 模型列表将在这里动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Estimate and Generate Button (贴在一起) -->
+                    <div class="space-y-0">
+                        <!-- Cost Estimate -->
+                        <div class="bg-purple-100 p-3 rounded-t-xl">
+                            <div class="flex justify-between text-gray-700 text-sm font-medium">
+                                <span>预计成本</span>
+                                <span id="costEstimate" class="font-mono">$0.10</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Generate Button -->
+                        <button 
+                            onclick="startGeneration()"
+                            id="generateBtn"
+                            class="w-full btn-primary text-white font-bold py-4 rounded-b-xl rounded-t-none"
+                        >
+                            🚀 开始生成
+                        </button>
                     </div>
                 </div>
             </div>
@@ -202,7 +207,7 @@
                 </div>
 
                 <!-- Results -->
-                <div class="glass rounded-3xl p-6">
+                <div id="resultsContainer" class="glass rounded-3xl p-6">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">📊 生成结果</h2>
                     <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <!-- Empty State -->
@@ -750,7 +755,30 @@
             if (debugCheckbox) {
                 debugCheckbox.checked = debugMode;
             }
+            
+            // 同步右侧结果区域高度与左侧输入面板
+            setTimeout(() => {
+                syncResultsHeight();
+            }, 100);
+            
+            // 监听窗口大小变化
+            window.addEventListener('resize', () => {
+                syncResultsHeight();
+            });
         };
+        
+        // 同步右侧结果区域高度与左侧输入面板
+        function syncResultsHeight() {
+            const leftPanel = document.querySelector('.md\\:col-span-1 > div');
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            if (leftPanel && resultsContainer) {
+                // 获取左侧面板的实际高度
+                const leftHeight = leftPanel.offsetHeight;
+                // 设置右侧结果区域的最小高度
+                resultsContainer.style.minHeight = `${leftHeight}px`;
+            }
+        }
 
 
         // 字符计数
