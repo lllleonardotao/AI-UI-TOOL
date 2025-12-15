@@ -233,17 +233,11 @@
         <div class="glass rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">⚙️ 设置</h2>
             
-            <!-- API Key -->
-            <div class="mb-6">
-                <label class="text-gray-700 text-sm font-medium mb-2 block">OpenRouter API Key</label>
-                <input 
-                    type="password" 
-                    id="apiKeyInput"
-                    class="w-full p-3 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="sk-or-v1-xxxxx..."
-                >
-                <p class="text-gray-600 text-xs mt-2">
-                    没有API Key？<a href="https://openrouter.ai/" target="_blank" class="text-purple-600 font-medium underline">点击注册</a>
+            <!-- API Key 说明 -->
+            <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <p class="text-blue-800 text-sm">
+                    🔒 <strong>API Key 已移至服务器端</strong><br>
+                    API Key 已安全地保存在服务器端，团队成员可以直接使用，无需配置。
                 </p>
             </div>
 
@@ -357,7 +351,9 @@
 
     <script>
         // 配置
-        const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1';
+        // 使用代理服务器 URL（通过 Vercel Serverless Function）
+        // API Key 已保存在服务器端，前端无需配置
+        const OPENROUTER_API_URL = '/api/openrouter';
         
         /**
          * 模型配置
@@ -498,8 +494,9 @@
             profile: '优雅简洁的个人中心页面，白色/浅色背景，包含以下功能模块和交互：\n1. 头部信息卡片：\n   - 背景渐变或图案\n   - 圆形头像（可点击编辑，点击时有缩放动画，编辑时显示编辑图标动画）\n   - 用户名和简介（可点击编辑，有编辑图标和输入框展开动画）\n   - 粉丝/关注/点赞数据（带数字动画，点击可跳转详情页）\n2. 功能菜单列表（分组设计）：\n   - 我的订单/我的收藏/我的设置等（每个项目带图标、文字、右箭头）\n   - 列表项点击时有背景色变化和右箭头滑动动画\n   - 分组标题有展开/收起功能（带动画）\n3. 快捷操作区域：\n   - 网格布局的快捷功能图标（6-9个）\n   - 图标悬停时有背景色填充和轻微放大动画\n   - 点击时有按压反馈动画\n4. 设置选项：\n   - 开关组件（带滑动动画和颜色过渡）\n   - 选择项（选中时有勾选图标淡入动画）\n   - 文本输入项（聚焦时有边框高亮动画）\n5. 底部操作：\n   - 退出登录按钮（红色文字，点击时有确认对话框淡入动画）\n6. 编辑模式：\n   - 点击编辑按钮后，头像和用户名变为可编辑状态（输入框展开动画）\n   - 保存按钮有加载状态动画\n7. 动效细节：页面滚动时头像有视差效果，列表项加载时有依次淡入动画，下拉刷新时有刷新动画指示器\n8. 设计风格：极简风格，大留白，圆角卡片（16-20px），柔和阴影，清新的色彩搭配'
         };
 
-        // 初始化
-        let apiKey = localStorage.getItem('openrouter_api_key') || '';
+        // API Key 已移至服务器端（Vercel Serverless Function）
+        // 前端无需配置 API Key，所有请求通过 /api/openrouter 代理
+        // 需要在 Vercel 项目设置中配置环境变量 OPENROUTER_API_KEY
         let currentResults = [];
         let debugMode = localStorage.getItem('debug_mode') === 'true';
         let generationHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
@@ -780,11 +777,9 @@
         }
         
 
-        // 页面加载时检查API Key
+        // 页面加载时初始化
         window.onload = () => {
-            if (!apiKey) {
-                showSettings();
-            }
+            // API Key 已移至服务器端，前端无需检查
             updateCharCount();
             loadModelSelectionList(); // 加载模型列表（默认勾选设置中已选的模型）
 
@@ -912,7 +907,7 @@
         function showSettings() {
             document.getElementById('settingsModal').classList.remove('hidden');
             document.getElementById('settingsModal').classList.add('flex');
-            document.getElementById('apiKeyInput').value = apiKey;
+            // API Key 已移至服务器端，无需在界面显示或读取
             loadSettingsModelList(); // 加载设置中的模型列表
         }
 
@@ -952,60 +947,55 @@
         }
 
         function saveSettings() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            if (key) {
-                apiKey = key;
-                localStorage.setItem('openrouter_api_key', key);
-
-                // 保存调试模式设置
-                const debugCheckbox = document.getElementById('debugMode');
-                debugMode = debugCheckbox.checked;
-                localStorage.setItem('debug_mode', debugMode.toString());
-                
-                // 保存选中的模型
-                const selectedModels = [];
-                const checkboxes = document.querySelectorAll('#settingsModelList input[type="checkbox"]:checked');
-                checkboxes.forEach(cb => {
-                    selectedModels.push(cb.id.replace('settings-model-', ''));
-                });
-                
-                // 验证至少选择一个模型
-                if (selectedModels.length === 0) {
-                    alert('⚠️ 请至少选择一个模型');
-                    return;
-                }
-                
-                // 默认的6个模型
-                const defaultMainPageModels = [
-                    'gemini-pro',
-                    'grok-fast',
-                    'claude-code',
-                    'deepseek-v3',
-                    'claude-sonnet-4.5',
-                    'claude-opus'
-                ];
-                
-                // 判断是否与默认6个完全相同
-                const isDefaultSelection = selectedModels.length === defaultMainPageModels.length &&
-                    selectedModels.every(key => defaultMainPageModels.includes(key)) &&
-                    defaultMainPageModels.every(key => selectedModels.includes(key));
-                
-                localStorage.setItem('selected_models', JSON.stringify(selectedModels));
-                
-                // 如果用户选择的是默认6个，不清除上次生成的选择（保持记忆）
-                // 如果用户选择的是其他模型，清除上次生成的选择（因为模型列表变了）
-                if (!isDefaultSelection) {
-                localStorage.removeItem('last_generation_models');
-                }
-                
-                // 更新主界面显示
-                loadModelSelectionList();
-
-                closeSettings();
-                alert('✅ 设置已保存，主界面已更新');
-            } else {
-                alert('⚠️ 请输入有效的API Key');
+            // API Key 已移至服务器端，无需保存
+            // 只保存其他设置（调试模式、模型选择等）
+            
+            // 保存调试模式设置
+            const debugCheckbox = document.getElementById('debugMode');
+            debugMode = debugCheckbox.checked;
+            localStorage.setItem('debug_mode', debugMode.toString());
+            
+            // 保存选中的模型
+            const selectedModels = [];
+            const checkboxes = document.querySelectorAll('#settingsModelList input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => {
+                selectedModels.push(cb.id.replace('settings-model-', ''));
+            });
+            
+            // 验证至少选择一个模型
+            if (selectedModels.length === 0) {
+                alert('⚠️ 请至少选择一个模型');
+                return;
             }
+            
+            // 默认的6个模型
+            const defaultMainPageModels = [
+                'gemini-pro',
+                'grok-fast',
+                'claude-code',
+                'deepseek-v3',
+                'claude-sonnet-4.5',
+                'claude-opus'
+            ];
+            
+            // 判断是否与默认6个完全相同
+            const isDefaultSelection = selectedModels.length === defaultMainPageModels.length &&
+                selectedModels.every(key => defaultMainPageModels.includes(key)) &&
+                defaultMainPageModels.every(key => selectedModels.includes(key));
+            
+            localStorage.setItem('selected_models', JSON.stringify(selectedModels));
+            
+            // 如果用户选择的是默认6个，不清除上次生成的选择（保持记忆）
+            // 如果用户选择的是其他模型，清除上次生成的选择（因为模型列表变了）
+            if (!isDefaultSelection) {
+                localStorage.removeItem('last_generation_models');
+            }
+            
+            // 更新主界面显示
+            loadModelSelectionList();
+
+            closeSettings();
+            alert('✅ 设置已保存，主界面已更新');
         }
 
         // 模板相关
@@ -1016,12 +1006,7 @@
 
         // 生成相关
         async function startGeneration() {
-            // 验证
-            if (!apiKey) {
-                alert('⚠️ 请先配置OpenRouter API Key');
-                showSettings();
-                return;
-            }
+            // API Key 已移至服务器端，无需验证
 
             const prompt = document.getElementById('promptInput').value.trim();
             if (!prompt) {
@@ -1393,13 +1378,11 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
             debugLog('📤 Request body:', JSON.stringify(requestBody, null, 2));
 
-            const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
+            const response = await fetch(OPENROUTER_API_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.href,
-                    'X-Title': 'AI UI Design Comparator'
+                    'Content-Type': 'application/json'
+                    // API Key 由服务器端代理处理，前端无需传递
                 },
                 body: JSON.stringify(requestBody)
             });
@@ -1439,7 +1422,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     } else if (statusCode === 429) {
                         errorMessage = '图片生成失败: 429 - 请求频率过高\n\n原因：免费模型限流或API调用次数超限\n解决方案：\n1. 稍后重试\n2. 添加自己的API密钥以获取更高限额';
                     } else if (statusCode === 401) {
-                        errorMessage = '图片生成失败: 401 - API密钥无效\n\n原因：API密钥错误或已过期\n解决方案：\n1. 检查API密钥是否正确\n2. 在设置中更新API密钥';
+                        errorMessage = '图片生成失败: 401 - API密钥无效\n\n原因：服务器端API密钥配置错误或已过期\n解决方案：请联系管理员检查服务器配置';
                     } else {
                         errorMessage = error.error?.message || error.message || `图片生成失败: ${statusCode}`;
                     }
@@ -1737,13 +1720,11 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         async function generateDescription(model, prompt) {
-            const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
+            const response = await fetch(OPENROUTER_API_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.href,
-                    'X-Title': 'AI UI Design Comparator'
+                    'Content-Type': 'application/json'
+                    // API Key 由服务器端代理处理，前端无需传递
                 },
                 body: JSON.stringify({
                     model: model,
@@ -1895,13 +1876,11 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             const timeoutId = setTimeout(() => controller.abort(), 90000);
             
             try {
-                const response = await fetch(`${OPENROUTER_API_URL}/chat/completions`, {
+                const response = await fetch(OPENROUTER_API_URL, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': window.location.href,
-                        'X-Title': 'AI UI Design Comparator'
+                        'Content-Type': 'application/json'
+                        // API Key 由服务器端代理处理，前端无需传递
                     },
                     body: JSON.stringify({
                         model: model,
@@ -1958,7 +1937,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         } else if (statusCode === 402) {
                             errorMessage = '代码生成失败: 402 - 余额不足\n\n原因：OpenRouter账户credits不足\n解决方案：\n1. 前往OpenRouter充值credits\n2. 减少请求的token数量\n3. 使用免费模型';
                         } else if (statusCode === 401) {
-                            errorMessage = '代码生成失败: 401 - API密钥无效\n\n原因：API密钥错误或已过期\n解决方案：\n1. 检查API密钥是否正确\n2. 在设置中更新API密钥';
+                            errorMessage = '代码生成失败: 401 - API密钥无效\n\n原因：服务器端API密钥配置错误或已过期\n解决方案：请联系管理员检查服务器配置';
                         } else if (statusCode === 404) {
                             errorMessage = '代码生成失败: 404 - 模型不存在\n\n原因：模型ID错误或模型已下架\n解决方案：\n1. 检查模型名称是否正确\n2. 查看OpenRouter支持的模型列表';
                         } else if (errorData.error?.message) {
