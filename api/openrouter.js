@@ -6,7 +6,7 @@
  * 1. 在 Vercel 项目设置中添加环境变量 OPENROUTER_API_KEY
  * 2. 前端调用 /api/openrouter 即可（固定转发到 /chat/completions）
  */
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // 处理 OPTIONS 请求（CORS 预检）
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -67,5 +67,4 @@ export default async function handler(req, res) {
       message: error.message 
     });
   }
-}
-
+};

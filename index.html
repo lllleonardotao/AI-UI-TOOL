@@ -591,12 +591,11 @@
             
             container.innerHTML = '';
             
-            // 推荐的6个模型（默认选中的）
+            // 推荐的5个模型（默认选中的）
             const defaultMainPageModels = [
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
-                'grok-fast',         // Grok 4.1 Fast (代码)
-                'claude-code',       // Claude 3.5 (代码)
                 'deepseek-v3',       // DeepSeek V3.2 (代码)
+                'claude-code',       // Claude 3.5 (代码)
                 'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
                 'claude-opus'        // Claude Opus 4.5 (代码)
             ];
@@ -604,7 +603,7 @@
             // 获取保存的选中模型
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
             
-            // 判断是否使用了默认的6个推荐模型
+            // 判断是否使用了默认的5个推荐模型
             const isDefaultSelection = savedSelected.length === defaultMainPageModels.length &&
                 savedSelected.every(key => defaultMainPageModels.includes(key)) &&
                 defaultMainPageModels.every(key => savedSelected.includes(key));
@@ -661,12 +660,11 @@
             
             container.innerHTML = '';
             
-            // 主页面默认显示的模型列表（推荐的6个模型）
+            // 主页面默认显示的模型列表（推荐的5个模型）
             const defaultMainPageModels = [
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
-                'grok-fast',         // Grok 4.1 Fast (代码)
-                'claude-code',       // Claude 3.5 (代码)
                 'deepseek-v3',       // DeepSeek V3.2 (代码)
+                'claude-code',       // Claude 3.5 (代码)
                 'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
                 'claude-opus'        // Claude Opus 4.5 (代码)
             ];
@@ -675,7 +673,7 @@
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
             
             // 判断用户是否在设置中修改过模型选择
-            // 如果保存的选择与默认6个完全相同，说明用户没有修改过
+            // 如果保存的选择与默认5个完全相同，说明用户没有修改过
             const isDefaultSelection = savedSelected.length === defaultMainPageModels.length &&
                 savedSelected.every(key => defaultMainPageModels.includes(key)) &&
                 defaultMainPageModels.every(key => savedSelected.includes(key));
@@ -683,7 +681,7 @@
             // 确定要显示的模型列表
             const availableModels = (savedSelected.length > 0 && !isDefaultSelection)
                 ? savedSelected.filter(key => MODEL_CONFIGS[key]) // 用户修改过，显示设置中选中的模型
-                : defaultMainPageModels.filter(key => MODEL_CONFIGS[key]); // 用户未修改，显示推荐的6个模型
+                : defaultMainPageModels.filter(key => MODEL_CONFIGS[key]); // 用户未修改，显示推荐的5个模型
             
             if (availableModels.length === 0) {
                 container.innerHTML = '<div class="text-gray-500 text-sm p-3">请在设置中选择至少一个模型</div>';
@@ -921,17 +919,16 @@
                 return;
             }
             
-            // 默认主页面显示的模型列表（推荐的6个模型）
+            // 默认主页面显示的模型列表（推荐的5个模型）
             const defaultMainPageModels = [
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
-                'grok-fast',         // Grok 4.1 Fast (代码)
-                'claude-code',       // Claude 3.5 (代码)
                 'deepseek-v3',       // DeepSeek V3.2 (代码)
+                'claude-code',       // Claude 3.5 (代码)
                 'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
                 'claude-opus'        // Claude Opus 4.5 (代码)
             ];
             
-            // 保存默认选择（保存推荐的6个模型）
+            // 保存默认选择（保存推荐的5个模型）
             localStorage.setItem('selected_models', JSON.stringify(defaultMainPageModels));
             
             // 清除上次生成时的选择
@@ -940,10 +937,10 @@
             // 更新设置页面的模型列表显示（会默认选中这6个）
             loadSettingsModelList();
             
-            // 更新主界面显示（会显示这6个模型，默认只勾选免费模型）
+            // 更新主界面显示（会显示这5个模型，默认只勾选免费模型）
             loadModelSelectionList();
             
-            alert('✅ 已恢复默认模型选择\n\n主页面将显示推荐的6个模型，默认勾选免费模型');
+            alert('✅ 已恢复默认模型选择\n\n主页面将显示推荐的5个模型，默认勾选免费模型');
         }
 
         function saveSettings() {
@@ -968,17 +965,16 @@
                 return;
             }
             
-            // 默认的6个模型
-            const defaultMainPageModels = [
-                'gemini-pro',
-                'grok-fast',
-                'claude-code',
-                'deepseek-v3',
-                'claude-sonnet-4.5',
-                'claude-opus'
-            ];
+                // 默认的5个模型
+                const defaultMainPageModels = [
+                    'gemini-pro',
+                    'deepseek-v3',
+                    'claude-code',
+                    'claude-sonnet-4.5',
+                    'claude-opus'
+                ];
             
-            // 判断是否与默认6个完全相同
+            // 判断是否与默认5个完全相同
             const isDefaultSelection = selectedModels.length === defaultMainPageModels.length &&
                 selectedModels.every(key => defaultMainPageModels.includes(key)) &&
                 defaultMainPageModels.every(key => selectedModels.includes(key));
