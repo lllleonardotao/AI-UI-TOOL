@@ -106,6 +106,7 @@
                         <textarea 
                             id="promptInput"
                             rows="3"
+                            maxlength="800"
                                 class="w-full p-4 pr-12 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
@@ -136,7 +137,7 @@
                             
                             <!-- 字符计数（右下角） -->
                             <div class="absolute bottom-2 right-2 text-gray-500 text-xs">
-                            <span id="charCount">0</span>/500
+                            <span id="charCount">0</span>/800
                             </div>
                         </div>
                     </div>
@@ -154,22 +155,22 @@
                     <div class="grid grid-cols-1 gap-4 mb-4">
                         <!-- Platform Selection -->
                         <div>
-                            <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
-                            <div class="flex gap-2">
-                                <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                    <input type="radio" name="platform" value="mobile" class="mr-2" checked>
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="radio" name="platform" value="mobile" class="mr-2" checked>
                                     <span class="text-gray-800 font-medium text-sm">手机端</span>
-                                </label>
-                                <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                    <input type="radio" name="platform" value="desktop" class="mr-2">
+                            </label>
+                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
+                                <input type="radio" name="platform" value="desktop" class="mr-2">
                                     <span class="text-gray-800 font-medium text-sm">PC端</span>
-                                </label>
-                            </div>
+                            </label>
                         </div>
+                    </div>
 
-                        <!-- Model Selection -->
+                    <!-- Model Selection -->
                         <div>
-                            <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
                             <div class="space-y-2 max-h-48 overflow-y-auto" id="modelSelectionList">
                                 <!-- 模型列表将在这里动态生成 -->
                             </div>
@@ -178,22 +179,22 @@
 
                     <!-- Cost Estimate and Generate Button (贴在一起) -->
                     <div class="space-y-0">
-                        <!-- Cost Estimate -->
+                    <!-- Cost Estimate -->
                         <div class="bg-purple-100 p-3 rounded-t-xl">
-                            <div class="flex justify-between text-gray-700 text-sm font-medium">
-                                <span>预计成本</span>
-                                <span id="costEstimate" class="font-mono">$0.10</span>
-                            </div>
+                        <div class="flex justify-between text-gray-700 text-sm font-medium">
+                            <span>预计成本</span>
+                            <span id="costEstimate" class="font-mono">$0.10</span>
                         </div>
-                        
-                        <!-- Generate Button -->
-                        <button 
-                            onclick="startGeneration()"
-                            id="generateBtn"
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button 
+                        onclick="startGeneration()"
+                        id="generateBtn"
                             class="w-full btn-primary text-white font-bold py-4 rounded-b-xl rounded-t-none"
-                        >
-                            🚀 开始生成
-                        </button>
+                    >
+                        🚀 开始生成
+                    </button>
                     </div>
                 </div>
             </div>
@@ -207,13 +208,15 @@
                 </div>
 
                 <!-- Results -->
-                <div id="resultsContainer" class="glass rounded-3xl p-6">
+                <div id="resultsContainer" class="glass rounded-3xl p-6 flex flex-col">
                     <h2 class="text-xl font-bold text-gray-800 mb-4">📊 生成结果</h2>
-                    <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 min-h-[500px] items-center">
                         <!-- Empty State -->
-                        <div class="col-span-2 text-center py-12 text-gray-500">
-                            <div class="text-6xl mb-4">🎨</div>
-                            <p>输入你的需求，点击生成按钮开始创作</p>
+                        <div class="col-span-2 flex items-center justify-center text-center text-gray-500 min-h-[400px]">
+                            <div>
+                                <div class="text-6xl mb-4">🎨</div>
+                                <p>输入你的需求，点击生成按钮开始创作</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -385,6 +388,12 @@
                 cost: 0,
                 type: 'image'
             },
+            'gemini-3-pro': {
+                name: 'Gemini 3 Pro Preview (免费)',
+                model: 'google/gemini-3-pro-preview',
+                cost: 0,
+                type: 'text-to-image-desc' // 该模型返回文本描述，需要转换为图像
+            },
             'flux': {
                 name: 'Flux Pro',
                 model: 'black-forest-labs/flux.2-pro',
@@ -480,9 +489,9 @@
 
         // 模板
         const TEMPLATES = {
-            login: '极简风格的移动APP登录页面，包含logo、邮箱输入框、密码输入框、登录按钮、忘记密码链接，玻璃态设计，白色背景，圆角元素',
-            dashboard: '现代简约的数据仪表盘界面，包含顶部统计卡片、折线图、饼图、最近活动列表，深色主题，玻璃态效果',
-            profile: '简洁的个人中心页面，顶部头像和用户信息、设置选项列表、退出登录按钮，极简风格，白色背景'
+            login: '极简现代风格的移动APP登录页面，包含以下元素和功能：\n1. 顶部：品牌logo（带淡入动画效果）\n2. 表单区域：\n   - 邮箱输入框（带图标，聚焦时有缩放和边框高亮动画，输入时有实时验证反馈）\n   - 密码输入框（带眼睛图标，点击可切换显示/隐藏密码，有平滑过渡动画）\n   - "记住我"复选框（带开关动画效果）\n   - 忘记密码链接（悬停时有颜色变化和轻微缩放）\n3. 登录按钮：大按钮设计，悬停时有背景色渐变和轻微提升效果，点击时有按压动画和加载状态（显示loading spinner）\n4. 第三方登录区域：微信、QQ、Apple登录图标按钮，带图标动画和悬停效果\n5. 注册链接：底部注册文字链接，带悬停动画\n6. 动效细节：页面加载时元素依次从下方淡入上移（stagger动画），输入框错误状态时有抖动提示动画，成功登录时按钮变为勾选动画\n7. 设计风格：玻璃态（glass morphism）设计，白色/浅色背景，大圆角元素（16-24px），柔和阴影，渐变色彩点缀',
+            dashboard: '现代科技风格的数据仪表盘界面，深色主题（深灰/黑色背景），包含以下元素和交互：\n1. 顶部导航栏：\n   - 标题和用户头像（带下拉菜单动画）\n   - 搜索框（聚焦时有展开动画）\n   - 通知图标（有新消息时有脉冲动画）\n2. 统计卡片区域（顶部4个卡片）：\n   - 卡片内容：图标、数值、变化趋势（百分比带颜色标识）\n   - 动效：卡片悬停时有上浮阴影和轻微缩放，数值加载时有数字滚动动画，趋势箭头有淡入动画\n3. 图表区域：\n   - 折线图：数据点悬停显示tooltip（带淡入动画），线条绘制时有路径动画，支持缩放和拖拽\n   - 饼图：悬停扇形时有分离和高亮效果，点击可钻取详情（有展开动画）\n   - 柱状图：柱子加载时有从底部上升动画，悬停时有高亮效果\n4. 数据表格/列表：\n   - 行悬停时有背景色变化动画\n   - 排序按钮点击时有翻转动画\n   - 分页切换时有淡出淡入过渡\n5. 筛选器：\n   - 时间选择器（下拉菜单带展开动画）\n   - 标签筛选（选中时有选中动画和标签动画）\n6. 实时更新：新数据到达时有闪烁提示和数值更新动画\n7. 设计风格：玻璃态效果（毛玻璃背景），渐变色彩（蓝紫色调），柔和光晕效果，流畅的过渡动画',
+            profile: '优雅简洁的个人中心页面，白色/浅色背景，包含以下功能模块和交互：\n1. 头部信息卡片：\n   - 背景渐变或图案\n   - 圆形头像（可点击编辑，点击时有缩放动画，编辑时显示编辑图标动画）\n   - 用户名和简介（可点击编辑，有编辑图标和输入框展开动画）\n   - 粉丝/关注/点赞数据（带数字动画，点击可跳转详情页）\n2. 功能菜单列表（分组设计）：\n   - 我的订单/我的收藏/我的设置等（每个项目带图标、文字、右箭头）\n   - 列表项点击时有背景色变化和右箭头滑动动画\n   - 分组标题有展开/收起功能（带动画）\n3. 快捷操作区域：\n   - 网格布局的快捷功能图标（6-9个）\n   - 图标悬停时有背景色填充和轻微放大动画\n   - 点击时有按压反馈动画\n4. 设置选项：\n   - 开关组件（带滑动动画和颜色过渡）\n   - 选择项（选中时有勾选图标淡入动画）\n   - 文本输入项（聚焦时有边框高亮动画）\n5. 底部操作：\n   - 退出登录按钮（红色文字，点击时有确认对话框淡入动画）\n6. 编辑模式：\n   - 点击编辑按钮后，头像和用户名变为可编辑状态（输入框展开动画）\n   - 保存按钮有加载状态动画\n7. 动效细节：页面滚动时头像有视差效果，列表项加载时有依次淡入动画，下拉刷新时有刷新动画指示器\n8. 设计风格：极简风格，大留白，圆角卡片（16-20px），柔和阴影，清新的色彩搭配'
         };
 
         // 初始化
@@ -554,7 +563,7 @@
                         title="删除图片"
                     >
                         ×
-                    </button>
+                        </button>
                 `;
                 container.appendChild(imageItem);
             });
@@ -581,27 +590,44 @@
             
             container.innerHTML = '';
             
+            // 推荐的6个模型（默认选中的）
+            const defaultMainPageModels = [
+                'gemini-pro',        // Gemini 3 Pro Image (免费)
+                'grok-fast',         // Grok 4.1 Fast (代码)
+                'claude-code',       // Claude 3.5 (代码)
+                'deepseek-v3',       // DeepSeek V3.2 (代码)
+                'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
+                'claude-opus'        // Claude Opus 4.5 (代码)
+            ];
+            
             // 获取保存的选中模型
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
             
-            // 获取所有模型并排序（按价格从低到高），排除自定义模型
-            const sortedModels = Object.keys(MODEL_CONFIGS)
-                .filter(key => !key.startsWith('custom-')) // 排除自定义模型
+            // 判断是否使用了默认的6个推荐模型
+            const isDefaultSelection = savedSelected.length === defaultMainPageModels.length &&
+                savedSelected.every(key => defaultMainPageModels.includes(key)) &&
+                defaultMainPageModels.every(key => savedSelected.includes(key));
+            
+            // 设置页面总是显示所有模型
+            const modelsToShow = Object.keys(MODEL_CONFIGS).filter(key => !key.startsWith('custom-'));
+            
+            // 获取所有模型并排序（按价格从低到高）
+            const sortedModels = modelsToShow
                 .map(key => ({
                     key: key,
                     ...MODEL_CONFIGS[key]
                 }))
                 .sort((a, b) => a.cost - b.cost); // 按价格从低到高排序
             
-            // 如果没有保存的选中模型，默认选中免费模型
-            const defaultSelected = savedSelected.length === 0 
-                ? sortedModels.filter(m => m.cost === 0).map(m => m.key)
+            // 确定默认选中状态：如果没有保存的，或者保存的是默认6个，则默认选中这6个
+            const defaultSelected = savedSelected.length === 0 || isDefaultSelection
+                ? defaultMainPageModels
                 : savedSelected;
             
             // 生成模型选择项
             sortedModels.forEach(model => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
+            const label = document.createElement('label');
+            label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
                 
                 // 检查是否已选中
                 const isChecked = defaultSelected.includes(model.key);
@@ -616,9 +642,9 @@
                     ? '<span class="text-purple-600 text-xs ml-2">🖼️ 图片</span>'
                     : '<span class="text-gray-600 text-xs ml-2">📝 描述</span>';
                 
-                label.innerHTML = `
+            label.innerHTML = `
                     <input type="checkbox" id="settings-model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
-                    <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                <span class="text-gray-800 font-medium flex-1">${model.name}</span>
                     ${typeDisplay}
                     ${costDisplay}
                 `;
@@ -627,28 +653,36 @@
             });
         }
         
-        // 加载主界面的模型列表（显示所有模型，默认勾选设置中已选的）
+        // 加载主界面的模型列表
         function loadModelSelectionList() {
             const container = document.getElementById('modelSelectionList');
             if (!container) return;
             
             container.innerHTML = '';
             
-            // 主页面默认显示的模型列表（始终显示这6个推荐模型）
+            // 主页面默认显示的模型列表（推荐的6个模型）
             const defaultMainPageModels = [
-                'gemini-pro',        // Gemini 3 Pro Image
-                'grok-fast',         // Grok 4.1 Fast
+                'gemini-pro',        // Gemini 3 Pro Image (免费)
+                'grok-fast',         // Grok 4.1 Fast (代码)
                 'claude-code',       // Claude 3.5 (代码)
-                'deepseek-v3',       // DeepSeek V3.2
-                'claude-sonnet-4.5', // Claude Sonnet 4.5
-                'claude-opus'        // Claude Opus 4.5
+                'deepseek-v3',       // DeepSeek V3.2 (代码)
+                'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
+                'claude-opus'        // Claude Opus 4.5 (代码)
             ];
             
-            // 主页面始终显示推荐的6个模型
-            const availableModels = defaultMainPageModels.filter(key => MODEL_CONFIGS[key]);
-            
-            // 获取设置中保存的勾选状态（用于决定哪些模型默认勾选）
+            // 获取设置中保存的勾选状态
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
+            
+            // 判断用户是否在设置中修改过模型选择
+            // 如果保存的选择与默认6个完全相同，说明用户没有修改过
+            const isDefaultSelection = savedSelected.length === defaultMainPageModels.length &&
+                savedSelected.every(key => defaultMainPageModels.includes(key)) &&
+                defaultMainPageModels.every(key => savedSelected.includes(key));
+            
+            // 确定要显示的模型列表
+            const availableModels = (savedSelected.length > 0 && !isDefaultSelection)
+                ? savedSelected.filter(key => MODEL_CONFIGS[key]) // 用户修改过，显示设置中选中的模型
+                : defaultMainPageModels.filter(key => MODEL_CONFIGS[key]); // 用户未修改，显示推荐的6个模型
             
             if (availableModels.length === 0) {
                 container.innerHTML = '<div class="text-gray-500 text-sm p-3">请在设置中选择至少一个模型</div>';
@@ -667,27 +701,27 @@
                 .sort((a, b) => a.cost - b.cost);
             
             // 确定默认勾选状态
-            // 优先级：上次生成的选择 > 设置中保存的选择 > 默认只勾选免费模型
             let defaultChecked = [];
+            
+            if (savedSelected.length > 0 && !isDefaultSelection) {
+                // 用户在设置中修改过：默认全部勾选设置中选中的模型
+                defaultChecked = availableModels;
+            } else {
+                // 用户没有修改过：默认只勾选免费模型，但如果有上次生成使用的模型，优先使用上次的
             if (lastGenerationModels.length > 0) {
                 // 检查上次选择的模型是否都在当前可用模型中
                 const validLastModels = lastGenerationModels.filter(key => availableModels.includes(key));
-                if (validLastModels.length > 0 && validLastModels.length === lastGenerationModels.length) {
-                    // 上次选择的模型都有效，使用上次的选择
+                    if (validLastModels.length > 0) {
+                        // 使用上次的选择
                     defaultChecked = validLastModels;
-                } else if (savedSelected.length > 0) {
-                    // 上次选择无效，使用设置中保存的选择（但只保留在可用模型中的）
-                    defaultChecked = savedSelected.filter(key => availableModels.includes(key));
                 } else {
-                    // 都没有，默认只勾选免费模型
+                        // 上次选择无效，默认只勾选免费模型
                     defaultChecked = availableModels.filter(key => MODEL_CONFIGS[key] && MODEL_CONFIGS[key].cost === 0);
                 }
-            } else if (savedSelected.length > 0) {
-                // 没有上次选择，使用设置中保存的选择（但只保留在可用模型中的）
-                defaultChecked = savedSelected.filter(key => availableModels.includes(key));
             } else {
-                // 都没有，默认只勾选免费模型
+                    // 没有上次选择，默认只勾选免费模型
                 defaultChecked = availableModels.filter(key => MODEL_CONFIGS[key] && MODEL_CONFIGS[key].cost === 0);
+                }
             }
             
             // 生成模型选择项（只显示可用模型）
@@ -835,9 +869,21 @@
         function updateCharCount() {
             const input = document.getElementById('promptInput');
             const count = input.value.length;
-            document.getElementById('charCount').textContent = count;
-            if (count > 500) {
-                input.value = input.value.substring(0, 500);
+            const charCountElement = document.getElementById('charCount');
+            const parentElement = charCountElement.parentElement;
+            
+            // 字符计数样式：接近限制时显示警告色
+            if (count > 800) {
+                input.value = input.value.substring(0, 800);
+                charCountElement.textContent = 800;
+                parentElement.className = 'absolute bottom-2 right-2 text-red-500 text-xs font-semibold';
+            } else {
+                charCountElement.textContent = count;
+                if (count > 700) {
+                    parentElement.className = 'absolute bottom-2 right-2 text-orange-500 text-xs';
+                } else {
+                    parentElement.className = 'absolute bottom-2 right-2 text-gray-500 text-xs';
+                }
             }
         }
 
@@ -876,38 +922,27 @@
                 return;
             }
             
-            // 默认主页面显示的模型列表
+            // 默认主页面显示的模型列表（推荐的6个模型）
             const defaultMainPageModels = [
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
-                'grok-fast',         // Grok 4.1 Fast
+                'grok-fast',         // Grok 4.1 Fast (代码)
                 'claude-code',       // Claude 3.5 (代码)
-                'deepseek-v3',       // DeepSeek V3.2
-                'claude-sonnet-4.5', // Claude Sonnet 4.5
-                'claude-opus'        // Claude Opus 4.5
+                'deepseek-v3',       // DeepSeek V3.2 (代码)
+                'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
+                'claude-opus'        // Claude Opus 4.5 (代码)
             ];
             
-            // 默认勾选免费模型
-            const defaultCheckedModels = ['gemini-pro'];
-            
-            // 更新所有复选框状态
-            const checkboxes = document.querySelectorAll('#settingsModelList input[type="checkbox"]');
-            checkboxes.forEach(cb => {
-                const modelKey = cb.id.replace('settings-model-', '');
-                // 如果是默认主页面模型，显示并设置勾选状态
-                if (defaultMainPageModels.includes(modelKey)) {
-                    cb.checked = defaultCheckedModels.includes(modelKey);
-                    cb.closest('label').style.display = 'flex';
-                } else {
-                    // 其他模型取消勾选，但保持显示
-                    cb.checked = false;
-                }
-            });
-            
-            // 保存默认选择（保存主页面要显示的模型列表，默认勾选状态由代码逻辑决定）
+            // 保存默认选择（保存推荐的6个模型）
             localStorage.setItem('selected_models', JSON.stringify(defaultMainPageModels));
             
             // 清除上次生成时的选择
             localStorage.removeItem('last_generation_models');
+            
+            // 更新设置页面的模型列表显示（会默认选中这6个）
+            loadSettingsModelList();
+            
+            // 更新主界面显示（会显示这6个模型，默认只勾选免费模型）
+            loadModelSelectionList();
             
             alert('✅ 已恢复默认模型选择\n\n主页面将显示推荐的6个模型，默认勾选免费模型');
         }
@@ -936,12 +971,30 @@
                     return;
                 }
                 
+                // 默认的6个模型
+                const defaultMainPageModels = [
+                    'gemini-pro',
+                    'grok-fast',
+                    'claude-code',
+                    'deepseek-v3',
+                    'claude-sonnet-4.5',
+                    'claude-opus'
+                ];
+                
+                // 判断是否与默认6个完全相同
+                const isDefaultSelection = selectedModels.length === defaultMainPageModels.length &&
+                    selectedModels.every(key => defaultMainPageModels.includes(key)) &&
+                    defaultMainPageModels.every(key => selectedModels.includes(key));
+                
                 localStorage.setItem('selected_models', JSON.stringify(selectedModels));
                 
-                // 清除上次生成时的选择，因为设置已修改
+                // 如果用户选择的是默认6个，不清除上次生成的选择（保持记忆）
+                // 如果用户选择的是其他模型，清除上次生成的选择（因为模型列表变了）
+                if (!isDefaultSelection) {
                 localStorage.removeItem('last_generation_models');
+                }
                 
-                // 更新主界面显示（重新加载，显示设置中的模型，默认全部勾选）
+                // 更新主界面显示
                 loadModelSelectionList();
 
                 closeSettings();
@@ -995,13 +1048,10 @@
             btn.disabled = true;
             btn.textContent = '🔄 生成中...';
 
-            // 显示进度区域
-            document.getElementById('progressSection').classList.remove('hidden');
-            document.getElementById('progressList').innerHTML = '';
-
-            // 清空结果
+            // 清空结果并隐藏进度区域
             currentResults = [];
             document.getElementById('resultsGrid').innerHTML = '';
+            document.getElementById('progressSection').classList.add('hidden');
 
             // 获取平台选择
             const platformRadio = document.querySelector('input[name="platform"]:checked');
@@ -1051,6 +1101,11 @@ Design constraints:
 ${platformConstraints}
 
 Avoid: 3D elements, realistic photos, cartoon style`;
+
+            // 为每个模型创建占位符卡片
+            selectedModels.forEach(modelKey => {
+                addResultCardPlaceholder(modelKey);
+            });
 
             // 并发调用所有模型
             const promises = selectedModels.map(modelKey => 
@@ -1167,19 +1222,11 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 // 确保按钮状态总是恢复
             btn.disabled = false;
             btn.textContent = '🚀 开始生成';
-
-            // 隐藏进度
-            setTimeout(() => {
-                document.getElementById('progressSection').classList.add('hidden');
-            }, 2000);
             }
         }
 
         async function generateWithModel(modelKey, prompt, platform = 'mobile') {
             const config = MODEL_CONFIGS[modelKey];
-            
-            // 添加进度项
-            addProgressItem(modelKey, 'pending');
 
             try {
                 let imageUrl = null;
@@ -1197,8 +1244,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     imageUrl = await generateImage('google/gemini-2.5-flash-image-preview', description, platform);
                 }
 
-                // 成功
-                updateProgressItem(modelKey, 'success');
+                // 成功：更新结果卡片
+                updateResultCard(modelKey, imageUrl, codeContent, false, '');
+                
                 const result = { 
                     modelName: config.name, 
                     imageUrl: imageUrl, 
@@ -1207,18 +1255,26 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     isError: false, 
                     errorMsg: '' 
                 };
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg, result.codeContent);
+                currentResults.push(result);
                 
                 // 返回结果，用于历史记录
                 return result;
                 
             } catch (error) {
                 console.error(`${config.name} 生成失败:`, error);
-                updateProgressItem(modelKey, 'error', error.message);
                 
-                // 添加错误卡片（不会消失）
-                const result = { modelName: config.name, imageUrl: '', cost: config.cost, isError: true, errorMsg: error.message, codeContent: null };
-                addResultCard(result.modelName, result.imageUrl, result.cost, result.isError, result.errorMsg, result.codeContent);
+                // 失败：更新结果卡片显示错误
+                updateResultCard(modelKey, null, null, true, error.message);
+                
+                const result = { 
+                    modelName: config.name, 
+                    imageUrl: '', 
+                    cost: config.cost, 
+                    isError: true, 
+                    errorMsg: error.message, 
+                    codeContent: null 
+                };
+                currentResults.push(result);
                 
                 // 返回结果，用于历史记录
                 return result;
@@ -1400,23 +1456,54 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             const data = await response.json();
             debugLog('✅ Full API Response:', JSON.stringify(data, null, 2));
 
+            // 尝试所有choices（有些模型可能返回多个choices）
+            let imageUrl = null;
+            if (data.choices && Array.isArray(data.choices)) {
+                for (let i = 0; i < data.choices.length; i++) {
+                    const choice = data.choices[i];
+                    debugLog(`🔍 Checking choice[${i}]`);
+                    
+                    // 检查 message
+                    if (choice.message) {
+                        debugLog('📦 Message keys:', Object.keys(choice.message));
+                        debugLog('📦 Message structure:', JSON.stringify(choice.message, null, 2));
+                        imageUrl = extractImageFromResponse(choice.message);
+                        if (imageUrl) break;
+                    }
+                    
+                    // 检查是否有 delta（流式响应）
+                    if (choice.delta) {
+                        debugLog('📦 Delta keys:', Object.keys(choice.delta));
+                        imageUrl = extractImageFromResponse(choice.delta);
+                        if (imageUrl) break;
+                    }
+                }
+            }
+            
+            // 如果没有找到，尝试从第一个choice的message提取（向后兼容）
+            if (!imageUrl) {
             const message = data.choices?.[0]?.message;
-            if (!message) {
+                if (message) {
+                    debugLog('📦 Fallback: Checking first choice message');
+                    debugLog('📦 Message keys:', Object.keys(message));
+                    debugLog('📦 Message structure:', JSON.stringify(message, null, 2));
+                    imageUrl = extractImageFromResponse(message);
+                } else {
                 console.error('❌ No message in response');
                 console.error('Full data:', JSON.stringify(data, null, 2));
                 throw new Error('API响应格式错误：没有message');
+                }
             }
-
-            debugLog('📦 Message keys:', Object.keys(message));
-            debugLog('📦 Message structure:', JSON.stringify(message, null, 2));
-
-            // 尝试从响应中提取图片URL
-            const imageUrl = extractImageFromResponse(message);
 
             if (!imageUrl) {
                 console.error('❌ No image found in response');
-                console.error('Available message fields:', Object.keys(message));
-                console.error('Full message:', JSON.stringify(message, null, 2));
+                console.error('Full API response:', JSON.stringify(data, null, 2));
+                // 尝试获取第一个message用于错误信息
+                const firstMessage = data.choices?.[0]?.message || data.choices?.[0]?.delta;
+                if (firstMessage) {
+                    console.error('Available message fields:', Object.keys(firstMessage));
+                    console.error('Full message:', JSON.stringify(firstMessage, null, 2));
+                }
                 throw new Error('模型返回了数据，但没有找到图片。请检查控制台日志查看详细响应。');
             }
 
@@ -1430,6 +1517,110 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
         // 从API响应中提取图片URL的统一函数
         function extractImageFromResponse(message) {
+            // 递归搜索函数，用于深度搜索所有可能的字段
+            function deepSearch(obj, visited = new Set()) {
+                if (!obj || typeof obj !== 'object' || visited.has(obj)) {
+                    return null;
+                }
+                visited.add(obj);
+                
+                // 如果是数组，遍历每个元素
+                if (Array.isArray(obj)) {
+                    for (let item of obj) {
+                        const result = deepSearch(item, visited);
+                        if (result) return result;
+                    }
+                    return null;
+                }
+                
+                // 检查是否是base64图片数据或URL
+                if (typeof obj === 'string') {
+                    // 已经是完整的 data:image URL
+                    if (obj.startsWith('data:image/')) {
+                        debugLog('✅ Found base64 image (data:image)');
+                        return obj;
+                    }
+                    // 检查是否是HTTP(S) URL
+                    if (obj.startsWith('http://') || obj.startsWith('https://')) {
+                        debugLog('✅ Found HTTP URL');
+                        return obj;
+                    }
+                    // 对于很长的字符串，可能是base64图片数据
+                    // 只在明确可能是图片数据的情况下才处理（避免误判普通文本）
+                    if (obj.length > 500 && /^[A-Za-z0-9+/=\s]+$/.test(obj.replace(/\s/g, ''))) {
+                        debugLog('🔍 Found potential base64 string, length:', obj.length);
+                        // 对于明确是base64格式的长字符串，尝试添加前缀
+                        const cleanBase64 = obj.replace(/\s/g, '');
+                        // PNG magic number (base64编码后是 iVBORw0KGgo)
+                        if (cleanBase64.startsWith('iVBORw0KGgo')) {
+                            debugLog('✅ Detected PNG base64');
+                            return `data:image/png;base64,${cleanBase64}`;
+                        }
+                        // JPEG magic number (base64编码后是 /9j/)
+                        if (cleanBase64.startsWith('/9j/')) {
+                            debugLog('✅ Detected JPEG base64');
+                            return `data:image/jpeg;base64,${cleanBase64}`;
+                        }
+                    }
+                    return null;
+                }
+                
+                // 检查常见的关键字段
+                const imageFields = ['image', 'image_url', 'url', 'data', 'b64_json', 'base64'];
+                for (let field of imageFields) {
+                    if (obj[field]) {
+                        debugLog(`🔍 Found field: ${field}, type: ${typeof obj[field]}`);
+                        
+                        // 特殊处理：image_url 可能是对象 {url: "..."}
+                        if (field === 'image_url' && typeof obj[field] === 'object' && !Array.isArray(obj[field])) {
+                            if (obj[field].url) {
+                                debugLog(`✅ Found image_url.url`);
+                                const urlValue = obj[field].url;
+                                if (typeof urlValue === 'string' && (urlValue.startsWith('data:image/') || urlValue.startsWith('http'))) {
+                                    return urlValue;
+                                }
+                            }
+                        }
+                        
+                        // 如果字段值是字符串，直接检查
+                        if (typeof obj[field] === 'string') {
+                            if (obj[field].startsWith('data:image/')) {
+                                debugLog(`✅ Found ${field} (data:image)`);
+                                return obj[field];
+                            }
+                            if (obj[field].startsWith('http://') || obj[field].startsWith('https://')) {
+                                debugLog(`✅ Found ${field} (HTTP URL)`);
+                                return obj[field];
+                            }
+                            // 对于 b64_json 字段，添加前缀
+                            if (field === 'b64_json' && obj[field].length > 100) {
+                                debugLog(`✅ Found ${field} (base64), adding prefix`);
+                                return `data:image/png;base64,${obj[field]}`;
+                            }
+                        }
+                        // 递归搜索
+                        const result = deepSearch(obj[field], visited);
+                        if (result) {
+                            // 如果是b64_json且结果没有前缀，添加前缀
+                            if (field === 'b64_json' && typeof result === 'string' && !result.startsWith('data:') && !result.startsWith('http')) {
+                                return `data:image/png;base64,${result}`;
+                            }
+                            return result;
+                        }
+                    }
+                }
+                
+                // 递归搜索所有属性
+                for (let key in obj) {
+                    if (obj.hasOwnProperty(key) && !['reasoning', 'text', 'role'].includes(key)) {
+                        const result = deepSearch(obj[key], visited);
+                        if (result) return result;
+                    }
+                }
+                
+                return null;
+            }
+            
             // 方法1: 检查 content 数组 (最常见的格式)
             if (Array.isArray(message.content)) {
                 debugLog('🔍 Checking content array, length:', message.content.length);
@@ -1443,9 +1634,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             debugLog('✅ Found image_url (string)');
                             return item.image_url;
                         }
-                        if (item.image_url && item.image_url.url) {
+                        if (item.image_url && typeof item.image_url === 'object') {
+                            if (item.image_url.url) {
                             debugLog('✅ Found image_url.url');
                             return item.image_url.url;
+                            }
+                            // 深度搜索 image_url 对象
+                            const found = deepSearch(item.image_url);
+                            if (found) return found;
                         }
                     }
 
@@ -1463,6 +1659,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             debugLog('✅ Found item.source.data');
                             return item.source.data;
                         }
+                        // 深度搜索整个item
+                        const found = deepSearch(item);
+                        if (found) return found;
                     }
                 }
             }
@@ -1475,43 +1674,41 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     debugLog('✅ Extracted URL from string');
                     return url;
                 }
+                // 检查是否是base64字符串
+                if (message.content.length > 100 && message.content.startsWith('iVBORw0KGgo') || message.content.startsWith('/9j/')) {
+                    debugLog('✅ Found base64 in string content');
+                    const prefix = message.content.startsWith('iVBORw0KGgo') ? 'data:image/png;base64,' : 'data:image/jpeg;base64,';
+                    return prefix + message.content;
+                }
             }
 
             // 方法3: 检查 images 数组
             if (Array.isArray(message.images) && message.images.length > 0) {
                 debugLog('🔍 Checking images array');
-                const imageData = message.images[0];
-                if (typeof imageData === 'string') {
-                    debugLog('✅ Found images[0] (string)');
-                    return imageData;
-                }
-                if (imageData && typeof imageData === 'object') {
-                    // 检查嵌套的 image_url 对象（Flux/GPT格式）
-                    if (imageData.image_url) {
-                        if (typeof imageData.image_url === 'string') {
-                            debugLog('✅ Found images[0].image_url (string)');
-                            return imageData.image_url;
-                        }
-                        if (imageData.image_url.url) {
-                            debugLog('✅ Found images[0].image_url.url');
-                            return imageData.image_url.url;
-                        }
-                    }
-                    // 检查直接字段
-                    if (imageData.url) return imageData.url;
-                    if (imageData.data) return imageData.data;
-                    if (imageData.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
-                }
+                const found = deepSearch(message.images);
+                if (found) return found;
             }
 
             // 方法4: 直接字段
             if (message.image) {
                 debugLog('✅ Found message.image');
+                const found = deepSearch(message.image);
+                if (found) return found;
                 return message.image;
             }
             if (message.image_url) {
                 debugLog('✅ Found message.image_url');
+                const found = deepSearch(message.image_url);
+                if (found) return found;
                 return message.image_url;
+            }
+
+            // 方法5: 深度搜索整个message对象（处理可能的嵌套结构）
+            debugLog('🔍 Deep searching entire message object');
+            const found = deepSearch(message);
+            if (found) {
+                debugLog('✅ Found image through deep search');
+                return found;
             }
 
             // 未找到
@@ -1599,7 +1796,49 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }
 
             const data = await response.json();
-            return data.choices[0].message.content;
+            const message = data.choices?.[0]?.message;
+            
+            if (!message) {
+                throw new Error('API响应格式错误：没有message');
+            }
+            
+            let description = '';
+            
+            // 处理 content 字段
+            if (typeof message.content === 'string') {
+                description = message.content;
+            } else if (Array.isArray(message.content)) {
+                // 如果 content 是数组，提取所有文本内容
+                description = message.content
+                    .filter(item => item.type === 'text' && item.text)
+                    .map(item => item.text)
+                    .join('\n');
+            }
+            
+            // 如果描述为空，尝试使用 reasoning（某些模型可能将描述放在 reasoning 中）
+            if (!description && message.reasoning) {
+                description = typeof message.reasoning === 'string' 
+                    ? message.reasoning 
+                    : JSON.stringify(message.reasoning);
+            }
+            
+            if (!description) {
+                console.error('❌ 无法提取描述内容');
+                console.error('Message structure:', JSON.stringify(message, null, 2));
+                throw new Error('无法从模型响应中提取描述内容');
+            }
+            
+            // 清理描述：移除可能的 markdown 标记、代码块等
+            description = description.trim();
+            
+            // 如果描述太长，尝试提取核心部分（前2000字符通常足够用于图像生成）
+            if (description.length > 2000) {
+                console.warn('⚠️ 描述过长，截取前2000字符用于图像生成');
+                description = description.substring(0, 2000);
+            }
+            
+            debugLog('📝 提取的描述:', description.substring(0, 200));
+            return description;
         }
 
         /**
@@ -1790,36 +2029,221 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
             }
         }
 
-        // 进度相关
-        function addProgressItem(modelKey, status) {
+        // 结果卡片占位符相关
+        function addResultCardPlaceholder(modelKey) {
             const config = MODEL_CONFIGS[modelKey];
-            const item = document.createElement('div');
-            item.id = `progress-${modelKey}`;
-            item.className = 'flex items-center glass-dark p-3 rounded-lg';
-            item.innerHTML = `
-                <div class="spinner mr-3"></div>
-                <span class="text-gray-800 font-medium flex-1">${config.name}</span>
-                <span class="text-gray-600 text-sm">生成中...</span>
+            const card = document.createElement('div');
+            card.id = `result-card-${modelKey}`;
+            card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
+            
+            // 生成中的占位符
+            const placeholderDiv = document.createElement('div');
+            placeholderDiv.className = 'aspect-square bg-gray-50 flex items-center justify-center p-6';
+            placeholderDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <div class="text-gray-700 text-sm font-medium mb-1">${config.name}</div>
+                    <div class="text-gray-500 text-xs">生成中...</div>
+                </div>
             `;
-            document.getElementById('progressList').appendChild(item);
+            
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'p-4';
+            infoDiv.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-800 font-semibold">${config.name}</span>
+                    <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                </div>
+            `;
+            
+            card.appendChild(placeholderDiv);
+            card.appendChild(infoDiv);
+            document.getElementById('resultsGrid').appendChild(card);
         }
 
-        function updateProgressItem(modelKey, status, message = '') {
-            const item = document.getElementById(`progress-${modelKey}`);
-            if (!item) return;
-
-            if (status === 'success') {
-                item.innerHTML = `
-                    <span class="text-green-600 text-xl mr-3">✓</span>
-                    <span class="text-gray-800 font-medium flex-1">${MODEL_CONFIGS[modelKey].name}</span>
-                    <span class="text-green-600 text-sm font-medium">完成</span>
+        // 更新结果卡片状态
+        function updateResultCard(modelKey, imageUrl = null, codeContent = null, isError = false, errorMsg = '') {
+            const card = document.getElementById(`result-card-${modelKey}`);
+            if (!card) {
+                console.warn(`Card not found for model: ${modelKey}`);
+                return;
+            }
+            
+            const config = MODEL_CONFIGS[modelKey];
+            
+            // 清空卡片内容
+            card.innerHTML = '';
+            
+            if (isError) {
+                // 错误状态
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'aspect-square bg-red-50 flex items-center justify-center p-6';
+                errorDiv.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-4xl mb-2">❌</div>
+                        <div class="text-red-600 text-sm font-medium mb-2">生成失败</div>
+                        <div class="text-gray-600 text-xs max-h-20 overflow-y-auto">${errorMsg || '未知错误'}</div>
+                    </div>
                 `;
-            } else if (status === 'error') {
-                item.innerHTML = `
-                    <span class="text-red-600 text-xl mr-3">✗</span>
-                    <span class="text-gray-800 font-medium flex-1">${MODEL_CONFIGS[modelKey].name}</span>
-                    <span class="text-red-600 text-sm">${message || '失败'}</span>
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'p-4';
+                infoDiv.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-800 font-semibold">${config.name}</span>
+                        <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                    </div>
+                    <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
+                        🔄 重试
+                    </button>
                 `;
+                infoDiv.querySelector('button').onclick = () => retryModel(config.name);
+                
+                card.appendChild(errorDiv);
+                card.appendChild(infoDiv);
+            } else if (codeContent) {
+                // 代码内容（复用原有逻辑）
+                const codeContainer = document.createElement('div');
+                codeContainer.className = 'bg-gray-50 flex flex-col overflow-hidden';
+                codeContainer.style.height = '600px';
+                
+                const previewArea = document.createElement('div');
+                previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-auto';
+                previewArea.style.minHeight = '0';
+                previewArea.title = '点击查看大图';
+                
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'absolute inset-0 flex items-center justify-center bg-gray-100';
+                loadingDiv.innerHTML = '<div class="spinner"></div>';
+                previewArea.appendChild(loadingDiv);
+                
+                const iframe = document.createElement('iframe');
+                iframe.className = 'w-full h-full border-0';
+                iframe.style.opacity = '0';
+                iframe.style.transition = 'opacity 0.3s';
+                iframe.srcdoc = codeContent;
+                
+                iframe.onload = () => {
+                    setTimeout(() => {
+                        iframe.style.opacity = '1';
+                        if (previewArea.contains(loadingDiv)) {
+                            previewArea.removeChild(loadingDiv);
+                        }
+                    }, 500);
+                    
+                    try {
+                        iframe.contentDocument.body.onclick = () => {
+                            const platformRadio = document.querySelector('input[name="platform"]:checked');
+                            const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                            showCodePreview(codeContent, config.name, currentPlatform);
+                        };
+                    } catch (e) {}
+                };
+                
+                iframe.onerror = () => {
+                    if (previewArea.contains(loadingDiv)) {
+                        loadingDiv.innerHTML = '<div class="text-gray-500 text-sm">加载失败，请点击查看代码</div>';
+                    }
+                };
+                
+                previewArea.appendChild(iframe);
+                previewArea.onclick = (e) => {
+                    e.stopPropagation();
+                    const platformRadio = document.querySelector('input[name="platform"]:checked');
+                    const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                    showCodePreview(codeContent, config.name, currentPlatform);
+                };
+                
+                codeContainer.appendChild(previewArea);
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'p-3 bg-white flex-shrink-0';
+                infoDiv.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-800 font-semibold">${config.name}</span>
+                        <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                            👁️ 查看代码
+                        </button>
+                        <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                            ⬇️ 下载图片
+                        </button>
+                    </div>
+                `;
+                
+                infoDiv.querySelectorAll('button')[0].onclick = (e) => {
+                    e.stopPropagation();
+                    showCodeModal(codeContent, config.name);
+                };
+                
+                infoDiv.querySelectorAll('button')[1].onclick = (e) => {
+                    e.stopPropagation();
+                    const platformRadio = document.querySelector('input[name="platform"]:checked');
+                    const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                    showCodePreview(codeContent, config.name, currentPlatform);
+                    setTimeout(() => {
+                        showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
+                    }, 300);
+                };
+                
+                codeContainer.appendChild(infoDiv);
+                card.appendChild(codeContainer);
+            } else if (imageUrl) {
+                // 图片内容（复用原有逻辑）
+                const isBase64 = imageUrl.startsWith('data:image');
+                const isHttpUrl = imageUrl.startsWith('http');
+                
+                if (isBase64 || isHttpUrl) {
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'aspect-square bg-gray-100 relative';
+                    
+                    const img = document.createElement('img');
+                    img.className = 'w-full h-full object-cover';
+                    img.alt = config.name;
+                    
+                    img.onload = function() {
+                        console.log('✅ 图片加载成功:', config.name);
+                    };
+                    
+                    img.onerror = function() {
+                        console.error('❌ 图片加载失败:', config.name);
+                        imgContainer.innerHTML = `
+                            <div class="w-full h-full flex flex-col items-center justify-center p-4">
+                                <div class="text-4xl mb-2">⚠️</div>
+                                <div class="text-gray-600 text-xs text-center mb-2">图片加载失败</div>
+                            </div>
+                        `;
+                    };
+                    
+                    img.src = imageUrl;
+                    imgContainer.appendChild(img);
+                    
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'p-4';
+                    infoDiv.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-800 font-semibold">${config.name}</span>
+                            <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
+                                ⬇️ 下载图片
+                            </button>
+                        </div>
+                    `;
+                    
+                    infoDiv.querySelector('button').onclick = (e) => {
+                        e.stopPropagation();
+                        downloadImage(imageUrl, config.name);
+                    };
+                    
+                    card.appendChild(imgContainer);
+                    card.appendChild(infoDiv);
+                    card.style.cursor = 'pointer';
+                    card.onclick = () => showImageModal(imageUrl);
+                }
             }
         }
 
