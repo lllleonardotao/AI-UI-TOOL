@@ -946,24 +946,24 @@
         function saveSettings() {
             // API Key 已移至服务器端，无需保存
             // 只保存其他设置（调试模式、模型选择等）
-            
-            // 保存调试模式设置
-            const debugCheckbox = document.getElementById('debugMode');
-            debugMode = debugCheckbox.checked;
-            localStorage.setItem('debug_mode', debugMode.toString());
-            
-            // 保存选中的模型
-            const selectedModels = [];
-            const checkboxes = document.querySelectorAll('#settingsModelList input[type="checkbox"]:checked');
-            checkboxes.forEach(cb => {
-                selectedModels.push(cb.id.replace('settings-model-', ''));
-            });
-            
-            // 验证至少选择一个模型
-            if (selectedModels.length === 0) {
-                alert('⚠️ 请至少选择一个模型');
-                return;
-            }
+
+                // 保存调试模式设置
+                const debugCheckbox = document.getElementById('debugMode');
+                debugMode = debugCheckbox.checked;
+                localStorage.setItem('debug_mode', debugMode.toString());
+                
+                // 保存选中的模型
+                const selectedModels = [];
+                const checkboxes = document.querySelectorAll('#settingsModelList input[type="checkbox"]:checked');
+                checkboxes.forEach(cb => {
+                    selectedModels.push(cb.id.replace('settings-model-', ''));
+                });
+                
+                // 验证至少选择一个模型
+                if (selectedModels.length === 0) {
+                    alert('⚠️ 请至少选择一个模型');
+                    return;
+                }
             
                 // 默认的5个模型
                 const defaultMainPageModels = [
@@ -978,20 +978,20 @@
             const isDefaultSelection = selectedModels.length === defaultMainPageModels.length &&
                 selectedModels.every(key => defaultMainPageModels.includes(key)) &&
                 defaultMainPageModels.every(key => selectedModels.includes(key));
-            
-            localStorage.setItem('selected_models', JSON.stringify(selectedModels));
-            
+                
+                localStorage.setItem('selected_models', JSON.stringify(selectedModels));
+                
             // 如果用户选择的是默认6个，不清除上次生成的选择（保持记忆）
             // 如果用户选择的是其他模型，清除上次生成的选择（因为模型列表变了）
             if (!isDefaultSelection) {
                 localStorage.removeItem('last_generation_models');
             }
-            
+                
             // 更新主界面显示
-            loadModelSelectionList();
+                loadModelSelectionList();
 
-            closeSettings();
-            alert('✅ 设置已保存，主界面已更新');
+                closeSettings();
+                alert('✅ 设置已保存，主界面已更新');
         }
 
         // 模板相关
@@ -1975,14 +1975,29 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 let code = data.choices[0].message.content;
                 
+                // 清理/提取代码块，防止在 iframe 中显示 ```html
+                const sanitizeCode = (raw) => {
+                    if (!raw) return '';
+                    let cleaned = raw.trim();
+                    
+                    // 优先提取 markdown 代码块
+                    const block = cleaned.match(/```[a-zA-Z]*\s*([\s\S]*?)```/);
+                    if (block && block[1]) {
+                        cleaned = block[1].trim();
+                    } else {
+                        // 如果没有匹配到标准代码块，但存在起始 ```
+                        if (cleaned.startsWith('```')) {
+                            cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/,'').replace(/```$/, '').trim();
+                        }
+                    }
+                    
+                    return cleaned;
+                };
+                
+                code = sanitizeCode(code);
+                
                 if (!code || code.trim().length === 0) {
                     throw new Error('生成的代码为空');
-                }
-                
-                // 提取代码块（如果返回的是 markdown 格式）
-                const codeBlockMatch = code.match(/```(?:html|css|javascript|js)?\n([\s\S]*?)```/);
-                if (codeBlockMatch) {
-                    code = codeBlockMatch[1];
                 }
                 
                 // 确保代码包含基本的HTML结构
@@ -1997,6 +2012,19 @@ Avoid: 3D elements, realistic photos, cartoon style`;
     <title>Generated UI</title>
 </head>
 ${code.includes('<body') ? code : '<body>' + code + '</body>'}
+</html>`;
+                    } else {
+                        // 仍然没有结构时，简单包裹到 body 内，避免 iframe 中显示 ```html 文本
+                        code = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated UI</title>
+</head>
+<body>
+${code}
+</body>
 </html>`;
                     }
                 }
@@ -2425,9 +2453,9 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                                     iframeDoc.documentElement.style.overflow = 'hidden';
                                     iframeDoc.documentElement.style.height = '100%';
                                 }
-                            } catch (e) {
-                                // 跨域限制，忽略
-                            }
+                        } catch (e) {
+                            // 跨域限制，忽略
+                        }
                         }, 500);
                     };
                     
