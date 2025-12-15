@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI UI Design Comparator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* 玻璃态效果 - 增强对比度 */
         .glass {
@@ -214,8 +215,8 @@
                         <!-- Empty State -->
                         <div class="col-span-2 flex items-center justify-center text-center text-gray-500 min-h-[400px]">
                             <div>
-                                <div class="text-6xl mb-4">🎨</div>
-                                <p>输入你的需求，点击生成按钮开始创作</p>
+                            <div class="text-6xl mb-4">🎨</div>
+                            <p>输入你的需求，点击生成按钮开始创作</p>
                             </div>
                         </div>
                     </div>
@@ -2178,14 +2179,37 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                     showCodeModal(codeContent, config.name);
                 };
                 
-                infoDiv.querySelectorAll('button')[1].onclick = (e) => {
+                infoDiv.querySelectorAll('button')[1].onclick = async (e) => {
                     e.stopPropagation();
                     const platformRadio = document.querySelector('input[name="platform"]:checked');
                     const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
-                    showCodePreview(codeContent, config.name, currentPlatform);
-                    setTimeout(() => {
-                        showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
-                    }, 300);
+                    
+                    // 显示加载提示
+                    showToast('🖼️ 正在生成图片...', 2000);
+                    
+                    try {
+                        // 将代码转换为图片
+                        const imageData = await codeToImage(codeContent, currentPlatform);
+                        
+                        if (imageData) {
+                            // 下载图片
+                            await downloadImage(imageData, config.name);
+                            showToast('✅ 图片已生成并下载', 2000);
+                        } else {
+                            // 如果生成失败，打开全屏预览让用户截图
+                            showCodePreview(codeContent, config.name, currentPlatform);
+                            setTimeout(() => {
+                                showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
+                            }, 500);
+                        }
+                    } catch (error) {
+                        console.error('生成图片失败:', error);
+                        // 如果生成失败，打开全屏预览让用户截图
+                        showCodePreview(codeContent, config.name, currentPlatform);
+                        setTimeout(() => {
+                            showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
+                        }, 500);
+                    }
                 };
                 
                 codeContainer.appendChild(infoDiv);
@@ -2387,17 +2411,38 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                         showCodeModal(codeContent, modelName);
                     };
                     
-                    // 下载图片按钮（打开全屏预览让用户截图）
-                    infoDiv.querySelectorAll('button')[1].onclick = (e) => {
+                    // 下载图片按钮（将代码转换为图片并下载）
+                    infoDiv.querySelectorAll('button')[1].onclick = async (e) => {
                         e.stopPropagation();
-                        // 打开全屏预览，让用户截图
                         const platformRadio = document.querySelector('input[name="platform"]:checked');
                         const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                        
+                        // 显示加载提示
+                        showToast('🖼️ 正在生成图片...', 2000);
+                        
+                        try {
+                            // 将代码转换为图片
+                            const imageData = await codeToImage(codeContent, currentPlatform);
+                            
+                            if (imageData) {
+                                // 下载图片
+                                await downloadImage(imageData, modelName);
+                                showToast('✅ 图片已生成并下载', 2000);
+                            } else {
+                                // 如果生成失败，打开全屏预览让用户截图
                         showCodePreview(codeContent, modelName, currentPlatform);
-                        // 显示提示
                         setTimeout(() => {
                             showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
                         }, 500);
+                            }
+                        } catch (error) {
+                            console.error('生成图片失败:', error);
+                            // 如果生成失败，打开全屏预览让用户截图
+                            showCodePreview(codeContent, modelName, currentPlatform);
+                            setTimeout(() => {
+                                showToast('💡 提示：请在全屏预览中按 Cmd+Shift+4 (Mac) 或 Win+Shift+S (Windows) 截图保存', 4000);
+                            }, 500);
+                        }
                     };
                     
                     codeContainer.appendChild(infoDiv);
@@ -2759,18 +2804,26 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         /**
-         * 为代码内容生成缩略图（通过iframe渲染后截图）
+         * 将代码内容转换为图片（完整首屏截图）
          */
-        async function generateCodeThumbnail(codeContent, maxSize = 150) {
-            return new Promise((resolve) => {
+        async function codeToImage(codeContent, platform = 'mobile') {
+            return new Promise((resolve, reject) => {
                 try {
                     // 创建一个隐藏的iframe来渲染代码
                     const iframe = document.createElement('iframe');
                     iframe.style.position = 'fixed';
                     iframe.style.left = '-9999px';
                     iframe.style.top = '-9999px';
-                    iframe.style.width = '375px'; // 移动端标准宽度
-                    iframe.style.height = '667px'; // 移动端标准高度
+                    
+                    // 根据平台设置尺寸
+                    if (platform === 'mobile') {
+                        iframe.style.width = '375px';
+                        iframe.style.height = '812px'; // iPhone标准高度
+                    } else {
+                        iframe.style.width = '1920px';
+                        iframe.style.height = '1080px'; // 桌面标准高度
+                    }
+                    
                     iframe.style.border = 'none';
                     iframe.srcdoc = codeContent;
                     
@@ -2778,65 +2831,80 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     
                     // 等待iframe加载完成
                     iframe.onload = () => {
-                        setTimeout(() => {
+                        setTimeout(async () => {
                             try {
                                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                                 const body = iframeDoc.body;
                                 
                                 if (!body) {
                                     document.body.removeChild(iframe);
-                                    resolve(null);
+                                    reject(new Error('无法访问iframe内容'));
                                     return;
                                 }
                                 
-                                // 获取实际内容尺寸
-                                const width = Math.max(body.scrollWidth, 375);
-                                const height = Math.max(body.scrollHeight, 667);
-                                
-                                // 创建canvas
-                                const canvas = document.createElement('canvas');
-                                const ratio = Math.min(maxSize / width, maxSize / height);
-                                canvas.width = Math.floor(width * ratio);
-                                canvas.height = Math.floor(height * ratio);
-                                
+                                // 使用html2canvas截图
+                                if (typeof html2canvas !== 'undefined') {
+                                    const width = parseInt(iframe.style.width);
+                                    const height = parseInt(iframe.style.height);
+                                    
+                                    const canvas = await html2canvas(body, {
+                                        width: width,
+                                        height: height,
+                                        useCORS: true,
+                                        allowTaint: true,
+                                        scale: 1,
+                                        backgroundColor: '#ffffff',
+                                        windowWidth: width,
+                                        windowHeight: height
+                                    });
+                                    
+                                    const imageData = canvas.toDataURL('image/png', 1.0);
+                                    document.body.removeChild(iframe);
+                                    resolve(imageData);
+                                } else {
+                                    // 如果没有html2canvas，尝试使用Canvas API
+                                    const width = parseInt(iframe.style.width);
+                                    const height = parseInt(iframe.style.height);
+                                    
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = width;
+                                    canvas.height = height;
                                 const ctx = canvas.getContext('2d');
                                 
-                                // 使用html2canvas库（如果可用）或简单绘制
-                                // 由于跨域限制，这里使用一个简化的方法
-                                // 创建一个临时的img元素来显示iframe内容
-                                const img = new Image();
-                                img.crossOrigin = 'anonymous';
-                                
-                                // 尝试从iframe获取截图（可能因为跨域限制失败）
-                                try {
-                                    // 如果iframe内容可以访问，尝试绘制
+                                    // 填充白色背景
                                     ctx.fillStyle = '#ffffff';
-                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                    ctx.fillRect(0, 0, width, height);
                                     
-                                    // 由于跨域限制，无法直接截图iframe内容
-                                    // 返回null，让历史记录使用iframe预览
+                                    // 由于跨域限制，无法直接绘制iframe内容
+                                    // 返回一个占位图
+                                    ctx.fillStyle = '#f3f4f6';
+                                    ctx.fillRect(0, 0, width, height);
+                                    ctx.fillStyle = '#9ca3af';
+                                    ctx.font = '24px Arial';
+                                    ctx.textAlign = 'center';
+                                    ctx.textBaseline = 'middle';
+                                    ctx.fillText('代码预览', width / 2, height / 2);
+                                    
+                                    const imageData = canvas.toDataURL('image/png', 1.0);
                                     document.body.removeChild(iframe);
-                                    resolve(null);
-                                } catch (error) {
-                                    document.body.removeChild(iframe);
-                                    resolve(null);
+                                    resolve(imageData);
                                 }
                             } catch (error) {
-                                console.error('生成代码缩略图失败:', error);
+                                console.error('代码转图片失败:', error);
                                 if (document.body.contains(iframe)) {
                                     document.body.removeChild(iframe);
                                 }
-                                resolve(null);
+                                reject(error);
                             }
-                        }, 1000); // 等待1秒让内容渲染
+                        }, 2000); // 等待2秒让内容完全渲染
                     };
                     
-                    // 如果iframe加载失败，也返回null
+                    // 如果iframe加载失败
                     iframe.onerror = () => {
                         if (document.body.contains(iframe)) {
                             document.body.removeChild(iframe);
                         }
-                        resolve(null);
+                        reject(new Error('iframe加载失败'));
                     };
                     
                     // 设置超时
@@ -2844,8 +2912,61 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         if (document.body.contains(iframe)) {
                             document.body.removeChild(iframe);
                         }
+                        reject(new Error('代码转图片超时'));
+                    }, 10000);
+                } catch (error) {
+                    console.error('代码转图片失败:', error);
+                    reject(error);
+                }
+            });
+        }
+
+        /**
+         * 为代码内容生成缩略图（通过iframe渲染后截图）
+         */
+        async function generateCodeThumbnail(codeContent, maxSize = 150, platform = 'mobile') {
+            return new Promise(async (resolve) => {
+                try {
+                    // 使用codeToImage生成完整图片
+                    const fullImage = await codeToImage(codeContent, platform);
+                    
+                    if (!fullImage) {
                         resolve(null);
-                    }, 5000);
+                        return;
+                    }
+                    
+                    // 创建图片对象并缩放为缩略图
+                    const img = new Image();
+                    img.onload = () => {
+                        try {
+                            // 计算缩略图尺寸（保持宽高比）
+                            let width = img.width;
+                            let height = img.height;
+                            const ratio = Math.min(maxSize / width, maxSize / height);
+                            width = Math.floor(width * ratio);
+                            height = Math.floor(height * ratio);
+                            
+                            // 创建 Canvas 并绘制缩略图
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            // 转换为 base64（质量降低以减小文件大小）
+                            const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+                            resolve(thumbnail);
+                        } catch (error) {
+                            console.error('生成缩略图失败:', error);
+                            resolve(null);
+                        }
+                    };
+                    
+                    img.onerror = () => {
+                        resolve(null);
+                    };
+                    
+                    img.src = fullImage;
                 } catch (error) {
                     console.error('生成代码缩略图失败:', error);
                     resolve(null);
@@ -2894,7 +3015,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         result.codeContent = r.codeContent;
                         // 为代码内容生成缩略图（通过iframe渲染后截图）
                         try {
-                            result.thumbnail = await generateCodeThumbnail(r.codeContent, 150);
+                            result.thumbnail = await generateCodeThumbnail(r.codeContent, 150, platform);
                             console.log('📸 生成代码缩略图:', r.modelName, result.thumbnail ? '成功' : '失败');
                         } catch (error) {
                             console.error('生成代码缩略图失败:', error);
