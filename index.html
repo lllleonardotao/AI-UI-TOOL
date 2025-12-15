@@ -2076,9 +2076,10 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
             card.innerHTML = '';
             
             if (isError) {
-                // 错误状态
+                // 错误状态 - 统一尺寸
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'aspect-square bg-red-50 flex items-center justify-center p-6';
+                errorDiv.className = 'bg-red-50 flex items-center justify-center p-6';
+                errorDiv.style.height = '500px'; // 与其他卡片内容区域高度一致
                 errorDiv.innerHTML = `
                     <div class="text-center">
                         <div class="text-4xl mb-2">❌</div>
@@ -2103,14 +2104,17 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                 card.appendChild(errorDiv);
                 card.appendChild(infoDiv);
             } else if (codeContent) {
-                // 代码内容（复用原有逻辑）
+                // 代码内容 - 统一尺寸，只显示首屏
                 const codeContainer = document.createElement('div');
                 codeContainer.className = 'bg-gray-50 flex flex-col overflow-hidden';
-                codeContainer.style.height = '600px';
+                codeContainer.style.height = '600px'; // 统一高度
                 
                 const previewArea = document.createElement('div');
-                previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-auto';
+                previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-hidden';
                 previewArea.style.minHeight = '0';
+                previewArea.style.display = 'flex';
+                previewArea.style.alignItems = 'center';
+                previewArea.style.justifyContent = 'center';
                 previewArea.title = '点击查看大图';
                 
                 const loadingDiv = document.createElement('div');
@@ -2119,9 +2123,27 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                 previewArea.appendChild(loadingDiv);
                 
                 const iframe = document.createElement('iframe');
-                iframe.className = 'w-full h-full border-0';
+                iframe.className = 'border-0';
                 iframe.style.opacity = '0';
                 iframe.style.transition = 'opacity 0.3s';
+                iframe.style.pointerEvents = 'none'; // 禁用iframe内的交互，防止滚动
+                iframe.setAttribute('scrolling', 'no');
+                
+                // 根据平台设置iframe尺寸（移动端统一宽度，居中显示）
+                const platformRadio = document.querySelector('input[name="platform"]:checked');
+                const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                
+                if (currentPlatform === 'mobile') {
+                    iframe.style.width = '375px';
+                    iframe.style.height = '500px'; // 首屏高度，减去信息区域
+                    iframe.width = '375';
+                    iframe.height = '500';
+                } else {
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.maxWidth = '800px'; // 桌面端限制最大宽度
+                }
+                
                 iframe.srcdoc = codeContent;
                 
                 iframe.onload = () => {
@@ -2130,15 +2152,22 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                         if (previewArea.contains(loadingDiv)) {
                             previewArea.removeChild(loadingDiv);
                         }
+                        
+                        // 禁用iframe内的滚动
+                        try {
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            if (iframeDoc && iframeDoc.body) {
+                                iframeDoc.body.style.overflow = 'hidden';
+                                iframeDoc.body.style.height = '100%';
+                            }
+                            if (iframeDoc && iframeDoc.documentElement) {
+                                iframeDoc.documentElement.style.overflow = 'hidden';
+                                iframeDoc.documentElement.style.height = '100%';
+                            }
+                        } catch (e) {
+                            // 跨域限制，忽略
+                        }
                     }, 500);
-                    
-                    try {
-                        iframe.contentDocument.body.onclick = () => {
-                            const platformRadio = document.querySelector('input[name="platform"]:checked');
-                            const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
-                            showCodePreview(codeContent, config.name, currentPlatform);
-                        };
-                    } catch (e) {}
                 };
                 
                 iframe.onerror = () => {
@@ -2215,16 +2244,35 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                 codeContainer.appendChild(infoDiv);
                 card.appendChild(codeContainer);
             } else if (imageUrl) {
-                // 图片内容（复用原有逻辑）
+                // 图片内容 - 统一尺寸，移动端保持手机屏幕比例
                 const isBase64 = imageUrl.startsWith('data:image');
                 const isHttpUrl = imageUrl.startsWith('http');
                 
                 if (isBase64 || isHttpUrl) {
+                    // 统一尺寸：与代码预览卡片高度一致（600px总高度 - 信息区域高度）
                     const imgContainer = document.createElement('div');
-                    imgContainer.className = 'aspect-square bg-gray-100 relative';
+                    imgContainer.className = 'bg-gray-100 relative';
+                    imgContainer.style.height = '500px'; // 与代码预览区域高度一致
+                    imgContainer.style.width = '100%';
+                    imgContainer.style.display = 'flex';
+                    imgContainer.style.alignItems = 'center';
+                    imgContainer.style.justifyContent = 'center';
+                    
+                    // 获取当前平台，移动端添加padding保持手机屏幕比例
+                    const platformRadio = document.querySelector('input[name="platform"]:checked');
+                    const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                    
+                    if (currentPlatform === 'mobile') {
+                        // 移动端：顶部和两边留出空间，保持手机屏幕首屏比例
+                        imgContainer.style.padding = '16px 12px';
+                    }
                     
                     const img = document.createElement('img');
-                    img.className = 'w-full h-full object-cover';
+                    img.className = 'object-contain'; // 使用contain保持完整显示和原始比例
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    img.style.width = 'auto';
+                    img.style.height = 'auto';
                     img.alt = config.name;
                     
                     img.onload = function() {
@@ -2279,9 +2327,10 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
             card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
             
             if (isError) {
-                // 错误卡片
+                // 错误卡片 - 统一尺寸
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'aspect-square bg-red-50 flex items-center justify-center p-6';
+                errorDiv.className = 'bg-red-50 flex items-center justify-center p-6';
+                errorDiv.style.height = '500px'; // 与其他卡片内容区域高度一致
                 errorDiv.innerHTML = `
                     <div class="text-center">
                         <div class="text-4xl mb-2">❌</div>
@@ -2320,15 +2369,18 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                 
                 // 如果是代码内容
                 if (codeContent) {
-                    // 代码预览卡片 - 使用固定高度，确保按钮在底部
+                    // 代码预览卡片 - 统一尺寸，只显示首屏
                     const codeContainer = document.createElement('div');
                     codeContainer.className = 'bg-gray-50 flex flex-col overflow-hidden';
-                    codeContainer.style.height = '600px'; // 固定高度，使用height而不是minHeight
+                    codeContainer.style.height = '600px'; // 统一高度
                     
                     // 代码预览区域（主要部分，占据更多空间）
                     const previewArea = document.createElement('div');
-                    previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-auto';
+                    previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-hidden';
                     previewArea.style.minHeight = '0'; // 让flex-1正常工作
+                    previewArea.style.display = 'flex';
+                    previewArea.style.alignItems = 'center';
+                    previewArea.style.justifyContent = 'center';
                     previewArea.title = '点击查看大图';
                     
                     // 添加加载指示器
@@ -2339,9 +2391,27 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                     
                     // 使用 iframe 预览代码
                     const iframe = document.createElement('iframe');
-                    iframe.className = 'w-full h-full border-0';
+                    iframe.className = 'border-0';
                     iframe.style.opacity = '0';
                     iframe.style.transition = 'opacity 0.3s';
+                    iframe.style.pointerEvents = 'none'; // 禁用iframe内的交互，防止滚动
+                    iframe.setAttribute('scrolling', 'no');
+                    
+                    // 根据平台设置iframe尺寸（移动端统一宽度，居中显示）
+                    const platformRadio = document.querySelector('input[name="platform"]:checked');
+                    const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                    
+                    if (currentPlatform === 'mobile') {
+                        iframe.style.width = '375px';
+                        iframe.style.height = '500px'; // 首屏高度，减去信息区域
+                        iframe.width = '375';
+                        iframe.height = '500';
+                    } else {
+                        iframe.style.width = '100%';
+                        iframe.style.height = '100%';
+                        iframe.style.maxWidth = '800px'; // 桌面端限制最大宽度
+                    }
+                    
                     iframe.srcdoc = codeContent;
                     
                     // iframe加载完成后显示
@@ -2351,18 +2421,22 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                             if (previewArea.contains(loadingDiv)) {
                                 previewArea.removeChild(loadingDiv);
                             }
+                            
+                            // 禁用iframe内的滚动
+                            try {
+                                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                                if (iframeDoc && iframeDoc.body) {
+                                    iframeDoc.body.style.overflow = 'hidden';
+                                    iframeDoc.body.style.height = '100%';
+                                }
+                                if (iframeDoc && iframeDoc.documentElement) {
+                                    iframeDoc.documentElement.style.overflow = 'hidden';
+                                    iframeDoc.documentElement.style.height = '100%';
+                                }
+                            } catch (e) {
+                                // 跨域限制，忽略
+                            }
                         }, 500);
-                        
-                        try {
-                            iframe.contentDocument.body.onclick = () => {
-                                // 获取当前平台信息
-                                const platformRadio = document.querySelector('input[name="platform"]:checked');
-                                const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
-                                showCodePreview(codeContent, modelName, currentPlatform);
-                            };
-                        } catch (e) {
-                            // 跨域限制，忽略
-                        }
                     };
                     
                     // 如果加载失败，也移除加载指示器
@@ -2453,11 +2527,30 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
                 
                 if (isBase64 || isHttpUrl) {
                     // 使用JavaScript创建图片元素，避免HTML字符串问题
+                    // 统一尺寸：与代码预览卡片高度一致（600px总高度 - 信息区域高度）
                     const imgContainer = document.createElement('div');
-                    imgContainer.className = 'aspect-square bg-gray-100 relative';
+                    imgContainer.className = 'bg-gray-100 relative';
+                    imgContainer.style.height = '500px'; // 与代码预览区域高度一致
+                    imgContainer.style.width = '100%';
+                    imgContainer.style.display = 'flex';
+                    imgContainer.style.alignItems = 'center';
+                    imgContainer.style.justifyContent = 'center';
+                    
+                    // 获取当前平台，移动端添加padding保持手机屏幕比例
+                    const platformRadio = document.querySelector('input[name="platform"]:checked');
+                    const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
+                    
+                    if (currentPlatform === 'mobile') {
+                        // 移动端：顶部和两边留出空间，保持手机屏幕首屏比例
+                        imgContainer.style.padding = '16px 12px';
+                    }
                     
                     const img = document.createElement('img');
-                    img.className = 'w-full h-full object-cover';
+                    img.className = 'object-contain'; // 使用contain保持完整显示和原始比例
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    img.style.width = 'auto';
+                    img.style.height = 'auto';
                     img.alt = modelName;
                     
                     // 图片加载成功
@@ -2809,111 +2902,184 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         async function codeToImage(codeContent, platform = 'mobile') {
             return new Promise((resolve, reject) => {
                 try {
+                    // 根据平台设置尺寸
+                    let targetWidth, targetHeight;
+                    if (platform === 'mobile') {
+                        targetWidth = 375;
+                        targetHeight = 812; // iPhone标准高度
+                    } else {
+                        targetWidth = 1920;
+                        targetHeight = 1080; // 桌面标准高度
+                    }
+                    
                     // 创建一个隐藏的iframe来渲染代码
                     const iframe = document.createElement('iframe');
                     iframe.style.position = 'fixed';
                     iframe.style.left = '-9999px';
                     iframe.style.top = '-9999px';
-                    
-                    // 根据平台设置尺寸
-                    if (platform === 'mobile') {
-                        iframe.style.width = '375px';
-                        iframe.style.height = '812px'; // iPhone标准高度
-                    } else {
-                        iframe.style.width = '1920px';
-                        iframe.style.height = '1080px'; // 桌面标准高度
-                    }
-                    
+                    iframe.style.width = targetWidth + 'px';
+                    iframe.style.height = targetHeight + 'px';
                     iframe.style.border = 'none';
+                    iframe.style.backgroundColor = '#ffffff';
+                    iframe.setAttribute('scrolling', 'no');
+                    
+                    // 确保iframe的尺寸属性也设置
+                    iframe.width = targetWidth;
+                    iframe.height = targetHeight;
+                    
                     iframe.srcdoc = codeContent;
                     
                     document.body.appendChild(iframe);
                     
+                    let isResolved = false;
+                    let timeoutId;
+                    
+                    // 清理函数
+                    const cleanup = () => {
+                        if (timeoutId) clearTimeout(timeoutId);
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                    };
+                    
                     // 等待iframe加载完成
                     iframe.onload = () => {
+                        // 等待内容渲染和图片加载
                         setTimeout(async () => {
                             try {
-                                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                                const body = iframeDoc.body;
+                                if (isResolved) return;
                                 
-                                if (!body) {
-                                    document.body.removeChild(iframe);
-                                    reject(new Error('无法访问iframe内容'));
+                                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                                
+                                if (!iframeDoc) {
+                                    if (!isResolved) {
+                                        isResolved = true;
+                                        cleanup();
+                                        reject(new Error('无法访问iframe文档'));
+                                    }
                                     return;
                                 }
                                 
+                                // 等待所有图片加载完成
+                                const images = iframeDoc.querySelectorAll('img');
+                                const imagePromises = Array.from(images).map(img => {
+                                    if (img.complete) return Promise.resolve();
+                                    return new Promise((resolve, reject) => {
+                                        img.onload = resolve;
+                                        img.onerror = resolve; // 即使加载失败也继续
+                                        setTimeout(resolve, 3000); // 3秒超时
+                                    });
+                                });
+                                
+                                await Promise.all(imagePromises);
+                                
+                                // 再等待一下确保渲染完成
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                
+                                if (isResolved) return;
+                                
                                 // 使用html2canvas截图
                                 if (typeof html2canvas !== 'undefined') {
-                                    const width = parseInt(iframe.style.width);
-                                    const height = parseInt(iframe.style.height);
+                                    // 使用documentElement确保捕获整个页面
+                                    const elementToCapture = iframeDoc.documentElement;
                                     
-                                    const canvas = await html2canvas(body, {
-                                        width: width,
-                                        height: height,
-                                        useCORS: true,
-                                        allowTaint: true,
-                                        scale: 1,
-                                        backgroundColor: '#ffffff',
-                                        windowWidth: width,
-                                        windowHeight: height
-                                    });
+                                    if (!elementToCapture) {
+                                        if (!isResolved) {
+                                            isResolved = true;
+                                            cleanup();
+                                            reject(new Error('无法访问documentElement'));
+                                        }
+                                        return;
+                                    }
                                     
-                                    const imageData = canvas.toDataURL('image/png', 1.0);
-                                    document.body.removeChild(iframe);
-                                    resolve(imageData);
+                                    try {
+                                        const canvas = await html2canvas(elementToCapture, {
+                                            scale: 1,
+                                            useCORS: true,
+                                            allowTaint: true,
+                                            backgroundColor: null, // 使用原始背景
+                                            logging: false,
+                                            width: targetWidth,
+                                            height: targetHeight,
+                                            windowWidth: targetWidth,
+                                            windowHeight: targetHeight,
+                                            x: 0,
+                                            y: 0
+                                        });
+                                        
+                                        // 确保canvas尺寸正确
+                                        const finalCanvas = document.createElement('canvas');
+                                        finalCanvas.width = targetWidth;
+                                        finalCanvas.height = targetHeight;
+                                        const ctx = finalCanvas.getContext('2d');
+                                        
+                                        // 绘制到正确尺寸的canvas
+                                        ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+                                        
+                                        const imageData = finalCanvas.toDataURL('image/png', 1.0);
+                                        
+                                        if (!isResolved) {
+                                            isResolved = true;
+                                            cleanup();
+                                            resolve(imageData);
+                                        }
+                                    } catch (html2canvasError) {
+                                        console.error('html2canvas错误:', html2canvasError);
+                                        if (!isResolved) {
+                                            isResolved = true;
+                                            cleanup();
+                                            reject(html2canvasError);
+                                        }
+                                    }
                                 } else {
-                                    // 如果没有html2canvas，尝试使用Canvas API
-                                    const width = parseInt(iframe.style.width);
-                                    const height = parseInt(iframe.style.height);
-                                    
+                                    // 如果没有html2canvas，生成占位图
                                     const canvas = document.createElement('canvas');
-                                    canvas.width = width;
-                                    canvas.height = height;
-                                const ctx = canvas.getContext('2d');
-                                
-                                    // 填充白色背景
-                                    ctx.fillStyle = '#ffffff';
-                                    ctx.fillRect(0, 0, width, height);
-                                    
-                                    // 由于跨域限制，无法直接绘制iframe内容
-                                    // 返回一个占位图
+                                    canvas.width = targetWidth;
+                                    canvas.height = targetHeight;
+                                    const ctx = canvas.getContext('2d');
                                     ctx.fillStyle = '#f3f4f6';
-                                    ctx.fillRect(0, 0, width, height);
+                                    ctx.fillRect(0, 0, targetWidth, targetHeight);
                                     ctx.fillStyle = '#9ca3af';
                                     ctx.font = '24px Arial';
                                     ctx.textAlign = 'center';
                                     ctx.textBaseline = 'middle';
-                                    ctx.fillText('代码预览', width / 2, height / 2);
+                                    ctx.fillText('代码预览', targetWidth / 2, targetHeight / 2);
                                     
                                     const imageData = canvas.toDataURL('image/png', 1.0);
-                                    document.body.removeChild(iframe);
-                                    resolve(imageData);
+                                    if (!isResolved) {
+                                        isResolved = true;
+                                        cleanup();
+                                        resolve(imageData);
+                                    }
                                 }
                             } catch (error) {
                                 console.error('代码转图片失败:', error);
-                                if (document.body.contains(iframe)) {
-                                    document.body.removeChild(iframe);
+                                if (!isResolved) {
+                                    isResolved = true;
+                                    cleanup();
+                                    reject(error);
                                 }
-                                reject(error);
                             }
-                        }, 2000); // 等待2秒让内容完全渲染
+                        }, 1000); // 初始等待1秒
                     };
                     
                     // 如果iframe加载失败
                     iframe.onerror = () => {
-                        if (document.body.contains(iframe)) {
-                            document.body.removeChild(iframe);
+                        if (!isResolved) {
+                            isResolved = true;
+                            cleanup();
+                            reject(new Error('iframe加载失败'));
                         }
-                        reject(new Error('iframe加载失败'));
                     };
                     
                     // 设置超时
-                    setTimeout(() => {
-                        if (document.body.contains(iframe)) {
-                            document.body.removeChild(iframe);
+                    timeoutId = setTimeout(() => {
+                        if (!isResolved) {
+                            isResolved = true;
+                            cleanup();
+                            reject(new Error('代码转图片超时'));
                         }
-                        reject(new Error('代码转图片超时'));
-                    }, 10000);
+                    }, 20000); // 20秒超时
                 } catch (error) {
                     console.error('代码转图片失败:', error);
                     reject(error);
