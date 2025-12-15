@@ -1838,14 +1838,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 要求：
 1. 生成完整的 HTML、CSS 和 JavaScript 代码
 2. 代码应该是一个完整的、可独立运行的 HTML 文件
-3. 使用现代 CSS（Flexbox/Grid）实现布局
+3. 使用现代 CSS（Flexbox/Grid）实现布局，代码简洁高效
 4. 确保代码可以直接在浏览器中运行
 5. 如果是移动端，使用响应式设计，适配移动屏幕
 6. 如果是桌面端，使用适合桌面屏幕的布局
 7. 代码要包含所有必要的样式和交互功能
 8. 使用内联样式或 <style> 标签，确保代码可以独立运行
+9. 优先保证代码质量和功能完整性，避免不必要的冗余代码
 
-请直接输出完整的 HTML 代码，不要包含任何解释文字，只输出代码。`;
+请直接输出完整的 HTML 代码，不要包含任何解释文字，只输出代码。保持代码简洁，在保证功能的前提下尽量精简。`;
 
             // 构建消息内容
             let content;
@@ -1867,9 +1868,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 content = codePrompt;
             }
 
-            // 设置超时时间（90秒，代码生成可能需要更长时间）
+            // 设置超时时间（60秒，减少等待时间，提升用户体验）
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 90000);
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
             
             try {
                 const response = await fetch(OPENROUTER_API_URL, {
@@ -1886,8 +1887,21 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                 content: content
                             }
                         ],
-                        // 根据模型类型设置max_tokens，降低token消耗以节省credits
-                        max_tokens: model.includes(':free') ? 8000 : 16000
+                        // 优化max_tokens：减少生成量以加快响应速度
+                        // 对于特定模型，根据响应速度调整
+                        max_tokens: (() => {
+                            if (model.includes(':free')) {
+                                return 4000; // 免费模型：4000 tokens（约3000字代码）
+                            } else if (model.includes('claude-opus')) {
+                                return 4000; // Claude Opus：减少到4000以加快响应
+                            } else if (model.includes('claude-sonnet-4.5')) {
+                                return 5000; // Claude Sonnet 4.5：5000 tokens
+                            } else if (model.includes('deepseek')) {
+                                return 6000; // DeepSeek：6000 tokens
+                            } else {
+                                return 6000; // 其他付费模型：6000 tokens（足够生成完整页面）
+                            }
+                        })()
                     }),
                     signal: controller.signal
                 });
@@ -1991,7 +2005,7 @@ ${code.includes('<body') ? code : '<body>' + code + '</body>'}
             } catch (error) {
                 clearTimeout(timeoutId);
                 if (error.name === 'AbortError') {
-                    throw new Error('代码生成失败: 请求超时（90秒）\n\n原因：请求时间过长，可能网络较慢或模型响应慢\n解决方案：\n1. 检查网络连接\n2. 稍后重试\n3. 选择其他模型');
+                    throw new Error('代码生成失败: 请求超时（60秒）\n\n原因：请求时间过长，可能网络较慢或模型响应慢\n解决方案：\n1. 检查网络连接\n2. 稍后重试\n3. 选择响应更快的模型（如Gemini 3 Pro Image或Claude 3.5）\n4. 简化提示词以减少生成时间');
                 } else if (error.message && error.message.includes('Failed to fetch')) {
                     // 网络错误
                     throw new Error(`代码生成失败: 网络连接错误\n\n原因：无法连接到OpenRouter API服务器\n可能的原因：\n- 网络连接不稳定\n- 防火墙或代理设置问题\n- API服务器暂时不可用\n- 模型ID可能不正确（${model}）\n\n解决方案：\n1. 检查网络连接\n2. 检查防火墙/代理设置\n3. 确认模型ID是否正确\n4. 稍后重试\n5. 尝试使用其他模型`);

@@ -1,6 +1,11 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/openrouter.js": {
+      "maxDuration": 60
+    }
+  }
 }
 
