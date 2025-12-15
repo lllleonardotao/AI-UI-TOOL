@@ -1897,7 +1897,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             } else if (model.includes('claude-sonnet-4.5')) {
                                 return 5000; // Claude Sonnet 4.5：5000 tokens
                             } else if (model.includes('deepseek')) {
-                                return 6000; // DeepSeek：6000 tokens
+                                return 3000; // DeepSeek：进一步减少到3000以加快响应（该模型响应较慢）
                             } else {
                                 return 6000; // 其他付费模型：6000 tokens（足够生成完整页面）
                             }
