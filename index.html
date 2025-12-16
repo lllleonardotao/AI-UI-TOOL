@@ -233,11 +233,22 @@
         <div class="glass rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">⚙️ 设置</h2>
             
-            <!-- API Key 说明 -->
-            <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <p class="text-blue-800 text-sm">
-                    🔒 <strong>API Key 已移至服务器端</strong><br>
-                    API Key 已安全地保存在服务器端，团队成员可以直接使用，无需配置。
+            <!-- API Key 配置 -->
+            <div class="mb-6">
+                <label class="text-gray-700 text-sm font-medium mb-2 block">🔑 OpenRouter API Key（可选）</label>
+                <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-blue-800 text-xs">
+                        💡 如果不填写，将使用服务器端的公用 API Key。填写你自己的 API Key 后，将优先使用你的 Key。
+                    </p>
+                </div>
+                <input 
+                    type="password" 
+                    id="apiKeyInput" 
+                    placeholder="sk-or-v1-..." 
+                    class="w-full p-3 rounded-lg bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                <p class="text-gray-600 text-xs mt-1">
+                    获取 API Key：<a href="https://openrouter.ai/keys" target="_blank" class="text-purple-600 hover:underline">https://openrouter.ai/keys</a>
                 </p>
             </div>
 
@@ -351,9 +362,34 @@
 
     <script>
         // 配置
-        // 使用代理服务器 URL（通过 Vercel Serverless Function）
-        // API Key 已保存在服务器端，前端无需配置
-        const OPENROUTER_API_URL = '/api/openrouter';
+        // OpenRouter API 配置
+        const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
+        const OPENROUTER_PROXY_URL = '/api/openrouter'; // 服务器端代理 URL
+        
+        // 获取 API 配置（URL 和 headers）
+        function getApiConfig() {
+            const userApiKey = localStorage.getItem('openrouter_api_key');
+            if (userApiKey && userApiKey.trim()) {
+                // 使用用户自定义 API Key，直接调用 OpenRouter API
+                return {
+                    url: `${OPENROUTER_API_BASE}/chat/completions`,
+                    headers: {
+                        'Authorization': `Bearer ${userApiKey.trim()}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': window.location.origin,
+                        'X-Title': 'AI UI Design Comparator'
+                    }
+                };
+            } else {
+                // 使用服务器端代理
+                return {
+                    url: OPENROUTER_PROXY_URL,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+            }
+        }
         
         /**
          * 模型配置
@@ -921,7 +957,9 @@
         function showSettings() {
             document.getElementById('settingsModal').classList.remove('hidden');
             document.getElementById('settingsModal').classList.add('flex');
-            // API Key 已移至服务器端，无需在界面显示或读取
+            // 加载保存的 API Key
+            const savedApiKey = localStorage.getItem('openrouter_api_key') || '';
+            document.getElementById('apiKeyInput').value = savedApiKey;
             loadSettingsModelList(); // 加载设置中的模型列表
         }
 
@@ -960,8 +998,15 @@
         }
 
         function saveSettings() {
-            // API Key 已移至服务器端，无需保存
-            // 只保存其他设置（调试模式、模型选择等）
+            // 保存 API Key（可选）
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const apiKey = apiKeyInput.value.trim();
+            if (apiKey) {
+                localStorage.setItem('openrouter_api_key', apiKey);
+            } else {
+                // 如果清空，移除保存的 API Key，使用服务器端公用 Key
+                localStorage.removeItem('openrouter_api_key');
+            }
 
                 // 保存调试模式设置
                 const debugCheckbox = document.getElementById('debugMode');
@@ -1437,12 +1482,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
             debugLog('📤 Request body:', JSON.stringify(requestBody, null, 2));
 
-            const response = await fetch(OPENROUTER_API_URL, {
+            const apiConfig = getApiConfig();
+            const response = await fetch(apiConfig.url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                    // API Key 由服务器端代理处理，前端无需传递
-                },
+                headers: apiConfig.headers,
                 body: JSON.stringify(requestBody)
             });
 
@@ -1786,12 +1829,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         async function generateDescription(model, prompt) {
-            const response = await fetch(OPENROUTER_API_URL, {
+            const apiConfig = getApiConfig();
+            const response = await fetch(apiConfig.url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                    // API Key 由服务器端代理处理，前端无需传递
-                },
+                headers: apiConfig.headers,
                 body: JSON.stringify({
                     model: model,
                     messages: [
@@ -1983,12 +2024,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 for (let attempt = 0; attempt <= maxRetries; attempt++) {
                     try {
-                        const response = await fetch(OPENROUTER_API_URL, {
+                        const apiConfig = getApiConfig();
+                        const response = await fetch(apiConfig.url, {
                     method: 'POST',
-                    headers: {
-                                'Content-Type': 'application/json'
-                                // API Key 由服务器端代理处理，前端无需传递
-                            },
+                    headers: apiConfig.headers,
                             body: JSON.stringify(requestBody),
                     signal: controller.signal
                 });
