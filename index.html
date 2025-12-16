@@ -666,24 +666,20 @@
             
             container.innerHTML = '';
             
-            // 推荐的8个模型（默认选中的）
+            // 推荐的6个模型（默认选中的）
             // 1）Gemini 2.5 Flash Image (免费)
             // 2）Gemini 3 Pro Image (免费)
             // 3）Claude 3.5 (描述)
             // 4）Grok 4.1 Fast (代码)
             // 5）Claude Haiku 4.5 (代码)
             // 6）DeepSeek Coder (代码)
-            // 7）Qwen 2.5 (代码)
-            // 8）DeepSeek V3 (代码)
             const defaultMainPageModels = [
                 'gemini-flash',      // Gemini 2.5 Flash Image (免费)
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
                 'claude',            // Claude 3.5 (描述)
                 'grok-fast',         // Grok 4.1 Fast (代码)
                 'claude-haiku-4.5',  // Claude Haiku 4.5 (代码)
-                'deepseek-code',     // DeepSeek Coder (代码)
-                'qwen-coder',        // Qwen 2.5 (代码)
-                'deepseek-v3'        // DeepSeek V3 (代码)
+                'deepseek-code'      // DeepSeek Coder (代码)
             ];
             
             // 获取保存的选中模型
@@ -3722,11 +3718,33 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
         let filteredHistory = [];
 
-        function loadHistory() {
+        async function loadHistory() {
             // 从 localStorage 重新加载（确保是最新的）
             generationHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
             filteredHistory = generationHistory;
+            
+            // 从服务器加载全站统计数据
+            await loadServerStatistics();
+            
             filterHistory();
+        }
+
+        async function loadServerStatistics() {
+            try {
+                const response = await fetch('/api/stats');
+                if (response.ok) {
+                    const serverStats = await response.json();
+                    // 将服务器统计数据存储到全局变量，供 updateCostStatistics 使用
+                    window.serverStatistics = serverStats;
+                    console.log('✅ 全站统计数据已加载:', serverStats);
+                } else {
+                    console.warn('⚠️ 获取全站统计数据失败:', response.status);
+                    window.serverStatistics = null;
+                }
+            } catch (error) {
+                console.warn('⚠️ 获取全站统计数据失败（可能服务器未配置）:', error);
+                window.serverStatistics = null;
+            }
         }
 
         function filterHistory() {
