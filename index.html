@@ -541,7 +541,7 @@
                         ></textarea>
                             
                             <!-- 图片上传区域（左下角） -->
-                            <div class="absolute bottom-3 left-3 flex items-center gap-2 flex-wrap">
+                            <div class="absolute bottom-5 left-3 flex items-center gap-2 flex-wrap">
                                 <div id="referenceImagesContainer" class="flex items-center gap-2 flex-wrap"></div>
                                 <input 
                                     type="file" 
@@ -562,7 +562,7 @@
                             </div>
                             
                             <!-- 字符计数（右下角） -->
-                            <div class="absolute bottom-3 right-3 text-stone-600 text-xs font-mono">
+                            <div class="absolute bottom-4 right-4 text-stone-600 text-xs font-mono">
                                 <span id="charCount">0</span><span class="text-stone-700">/500</span>
                             </div>
                         </div>
@@ -1430,13 +1430,13 @@
             if (count > 500) {
                 input.value = input.value.substring(0, 500);
                 charCountElement.textContent = 500;
-                parentElement.className = 'absolute bottom-3 right-3 text-red-400 text-xs font-mono font-semibold';
+                parentElement.className = 'absolute bottom-4 right-4 text-red-400 text-xs font-mono font-semibold';
             } else {
                 charCountElement.textContent = count;
                 if (count > 450) {
-                    parentElement.className = 'absolute bottom-3 right-3 text-amber-400 text-xs font-mono';
+                    parentElement.className = 'absolute bottom-4 right-4 text-amber-400 text-xs font-mono';
                 } else {
-                    parentElement.className = 'absolute bottom-3 right-3 text-stone-600 text-xs font-mono';
+                    parentElement.className = 'absolute bottom-4 right-4 text-stone-600 text-xs font-mono';
                 }
             }
         }
