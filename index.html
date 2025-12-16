@@ -3112,26 +3112,40 @@ ${code}
                     imgContainer.style.alignItems = 'center';
                     imgContainer.style.justifyContent = 'center';
                     imgContainer.style.background = 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)';
-                    
+
                     const platformRadio = document.querySelector('input[name="platform"]:checked');
                     const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
-                    
+
                     if (currentPlatform === 'mobile') {
                         imgContainer.style.padding = '20px 16px';
                     }
-                    
+
+                    // 添加加载指示器
+                    const loadingIndicator = document.createElement('div');
+                    loadingIndicator.className = 'absolute inset-0 flex items-center justify-center bg-stone-900/50';
+                    loadingIndicator.innerHTML = '<div class="spinner"></div>';
+                    imgContainer.appendChild(loadingIndicator);
+
                     const img = document.createElement('img');
                     img.className = 'object-contain rounded-lg shadow-2xl';
                     img.style.maxWidth = '100%';
                     img.style.maxHeight = '100%';
                     img.style.width = 'auto';
                     img.style.height = 'auto';
+                    img.style.opacity = '0';
+                    img.style.transition = 'opacity 0.3s ease';
                     img.alt = config.name;
-                    
+
                     img.onload = function() {
                         console.log('✅ 图片加载成功:', config.name);
+                        // 移除加载指示器
+                        if (imgContainer.contains(loadingIndicator)) {
+                            imgContainer.removeChild(loadingIndicator);
+                        }
+                        // 显示图片
+                        img.style.opacity = '1';
                     };
-                    
+
                     img.onerror = function() {
                         console.error('❌ 图片加载失败:', config.name);
                         imgContainer.innerHTML = `
@@ -3143,9 +3157,10 @@ ${code}
                             </div>
                         `;
                     };
-                    
-                    img.src = imageUrl;
+
+                    // 先添加到DOM再设置src，确保onload能正确触发
                     imgContainer.appendChild(img);
+                    img.src = imageUrl;
                     
                     const infoDiv = document.createElement('div');
                     infoDiv.className = 'p-4 bg-stone-800/50 border-t border-stone-700/30';
