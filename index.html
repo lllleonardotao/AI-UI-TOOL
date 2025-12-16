@@ -110,7 +110,7 @@
                         <textarea 
                             id="promptInput"
                             rows="3"
-                            maxlength="800"
+                            maxlength="500"
                                 class="w-full p-4 pr-12 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
@@ -141,7 +141,7 @@
                             
                             <!-- 字符计数（右下角） -->
                             <div class="absolute bottom-2 right-2 text-gray-500 text-xs">
-                            <span id="charCount">0</span>/800
+                            <span id="charCount">0</span>/500
                             </div>
                         </div>
                     </div>
@@ -149,9 +149,9 @@
                     <!-- Quick Templates (移到输入框下方) -->
                     <div class="mb-4">
                         <div class="flex flex-wrap gap-2">
-                            <button onclick="useTemplate('login')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">登录页</button>
-                            <button onclick="useTemplate('dashboard')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">仪表盘</button>
-                            <button onclick="useTemplate('profile')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">个人中心</button>
+                            <button onclick="useTemplate('dashboard')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">理财仪表盘</button>
+                            <button onclick="useTemplate('search-result')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">搜索场内</button>
+                            <button onclick="useTemplate('campaign')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">运营活动</button>
                         </div>
                     </div>
 
@@ -416,55 +416,64 @@
                 name: 'Claude 3.5 (代码)',
                 model: 'anthropic/claude-3.5-sonnet',
                 cost: 0.01,
-                type: 'code'
+                type: 'code',
+                timeout: 100000 // 100s，Claude 3.5 偶尔较慢
             },
             'gpt4-code': {
                 name: 'GPT-4 Turbo (代码)',
                 model: 'openai/gpt-4-turbo',
                 cost: 0.01,
-                type: 'code'
+                type: 'code',
+                timeout: 110000 // 110s，GPT-4 Turbo 生成完整页面需要时间
             },
             'deepseek-code': {
                 name: 'DeepSeek Coder (代码)',
                 model: 'deepseek/deepseek-chat', // 使用 deepseek-chat，deepseek-coder 可能不可用
                 cost: 0.0001,
-                type: 'code'
+                type: 'code',
+                timeout: 120000 // 120s，DeepSeek 响应较慢
             },
             'gpt4o-code': {
                 name: 'GPT-4o (代码)',
                 model: 'openai/gpt-4o',
                 cost: 0.005,
-                type: 'code'
+                type: 'code',
+                timeout: 100000
             },
             'qwen-coder': {
                 name: 'Qwen3 Coder (代码) (免费)',
                 model: 'qwen/qwen3-coder:free',
                 cost: 0,
-                type: 'code'
+                type: 'code',
+                timeout: 110000
             },
             'deepseek-v3': {
                 name: 'DeepSeek V3.2 (代码)',
                 model: 'deepseek/deepseek-v3.2',
                 cost: 0.0002,
-                type: 'code'
+                type: 'code',
+                timeout: 130000
             },
             'claude-opus': {
                 name: 'Claude Opus 4.5 (代码)',
                 model: 'anthropic/claude-opus-4.5',
                 cost: 0.02,
-                type: 'code'
+                type: 'code',
+                timeout: 150000 // Opus 非常慢，给足 150s
             },
             'grok-fast': {
                 name: 'Grok 4.1 Fast (代码)',
                 model: 'x-ai/grok-4.1-fast',
                 cost: 0.01,
-                type: 'code'
+                type: 'code',
+                timeout: 100000
             },
             'claude-sonnet-4.5': {
                 name: 'Claude Sonnet 4.5 (代码)',
                 model: 'anthropic/claude-sonnet-4.5',
                 cost: 0.015,
-                type: 'code'
+                type: 'code',
+                timeout: 130000
             },
             // 以下模型暂时不可用，已注释
             // 'deepseek-chat-v3': {
@@ -489,9 +498,11 @@
 
         // 模板
         const TEMPLATES = {
-            login: '极简现代风格的移动APP登录页面，包含以下元素和功能：\n1. 顶部：品牌logo（带淡入动画效果）\n2. 表单区域：\n   - 邮箱输入框（带图标，聚焦时有缩放和边框高亮动画，输入时有实时验证反馈）\n   - 密码输入框（带眼睛图标，点击可切换显示/隐藏密码，有平滑过渡动画）\n   - "记住我"复选框（带开关动画效果）\n   - 忘记密码链接（悬停时有颜色变化和轻微缩放）\n3. 登录按钮：大按钮设计，悬停时有背景色渐变和轻微提升效果，点击时有按压动画和加载状态（显示loading spinner）\n4. 第三方登录区域：微信、QQ、Apple登录图标按钮，带图标动画和悬停效果\n5. 注册链接：底部注册文字链接，带悬停动画\n6. 动效细节：页面加载时元素依次从下方淡入上移（stagger动画），输入框错误状态时有抖动提示动画，成功登录时按钮变为勾选动画\n7. 设计风格：玻璃态（glass morphism）设计，白色/浅色背景，大圆角元素（16-24px），柔和阴影，渐变色彩点缀',
-            dashboard: '现代科技风格的数据仪表盘界面，深色主题（深灰/黑色背景），包含以下元素和交互：\n1. 顶部导航栏：\n   - 标题和用户头像（带下拉菜单动画）\n   - 搜索框（聚焦时有展开动画）\n   - 通知图标（有新消息时有脉冲动画）\n2. 统计卡片区域（顶部4个卡片）：\n   - 卡片内容：图标、数值、变化趋势（百分比带颜色标识）\n   - 动效：卡片悬停时有上浮阴影和轻微缩放，数值加载时有数字滚动动画，趋势箭头有淡入动画\n3. 图表区域：\n   - 折线图：数据点悬停显示tooltip（带淡入动画），线条绘制时有路径动画，支持缩放和拖拽\n   - 饼图：悬停扇形时有分离和高亮效果，点击可钻取详情（有展开动画）\n   - 柱状图：柱子加载时有从底部上升动画，悬停时有高亮效果\n4. 数据表格/列表：\n   - 行悬停时有背景色变化动画\n   - 排序按钮点击时有翻转动画\n   - 分页切换时有淡出淡入过渡\n5. 筛选器：\n   - 时间选择器（下拉菜单带展开动画）\n   - 标签筛选（选中时有选中动画和标签动画）\n6. 实时更新：新数据到达时有闪烁提示和数值更新动画\n7. 设计风格：玻璃态效果（毛玻璃背景），渐变色彩（蓝紫色调），柔和光晕效果，流畅的过渡动画',
-            profile: '优雅简洁的个人中心页面，白色/浅色背景，包含以下功能模块和交互：\n1. 头部信息卡片：\n   - 背景渐变或图案\n   - 圆形头像（可点击编辑，点击时有缩放动画，编辑时显示编辑图标动画）\n   - 用户名和简介（可点击编辑，有编辑图标和输入框展开动画）\n   - 粉丝/关注/点赞数据（带数字动画，点击可跳转详情页）\n2. 功能菜单列表（分组设计）：\n   - 我的订单/我的收藏/我的设置等（每个项目带图标、文字、右箭头）\n   - 列表项点击时有背景色变化和右箭头滑动动画\n   - 分组标题有展开/收起功能（带动画）\n3. 快捷操作区域：\n   - 网格布局的快捷功能图标（6-9个）\n   - 图标悬停时有背景色填充和轻微放大动画\n   - 点击时有按压反馈动画\n4. 设置选项：\n   - 开关组件（带滑动动画和颜色过渡）\n   - 选择项（选中时有勾选图标淡入动画）\n   - 文本输入项（聚焦时有边框高亮动画）\n5. 底部操作：\n   - 退出登录按钮（红色文字，点击时有确认对话框淡入动画）\n6. 编辑模式：\n   - 点击编辑按钮后，头像和用户名变为可编辑状态（输入框展开动画）\n   - 保存按钮有加载状态动画\n7. 动效细节：页面滚动时头像有视差效果，列表项加载时有依次淡入动画，下拉刷新时有刷新动画指示器\n8. 设计风格：极简风格，大留白，圆角卡片（16-20px），柔和阴影，清新的色彩搭配'
+            login: '生成一个专业、可信的理财首页界面，整体风格克制、低饱和、偏长期投资。\n\n顶部为资产与行情概览区，展示总资产、昨日收益、累计收益，数字渐进加载，行情用细微动态线条表达。\n\n主体为基金产品列表，按指数、主动、固收+分区。单个产品卡片包含近一年收益、风险等级、波动特征，核心数据高亮，展开后显示更多参数，展开过程平滑自然。\n\n穿插理财资讯模块，以简洁信息流展示市场解读。\n\n设置基金经理卡片，展示从业年限、管理规模、代表产品，点击显示管理理念。\n\n底部或侧边为行情模块，支持指数切换，曲线动态重绘。\n\n整体交互自然流畅，信息层级清晰，强调可理解、可比较、可决策。',
+            dashboard: '生成深色模式、科技感强的理财仪表盘，深灰＋霓虹蓝紫光效，信息边界用细线与微弱发光区分。顶部展示总资产、昨日收益、累计收益，数字能量条式渐进动画，收益波动以光线脉冲呈现。中部为资产分布仪表区（环形图/能量环），进入视图时依次点亮，点击资产分类后以折叠卡片展开并伴随光线扩散。右侧为风险与健康度模块（雷达图/评分卡），切换时光效淡入，高评分蓝光强调，低评分暗红提示。底部展示"调仓、买入、分析报告"入口，按钮带呼吸光效，保持稳健金融氛围。整体未来感、可视化强、交互克制。',
+            profile: '基金详情页围绕"可理解、可比较、可决策"构建信息结构。顶部展示基金名称、类型标签（如指数/固收+），以及核心收益指标（近1年收益、今年以来、成立以来），数值以渐进加载动画呈现，并附带轻微涨跌动态线条，强调趋势感。\n\n页面中段为收益走势图，支持切换 1月 / 6月 / 1年 / 最大区间。切换时曲线动态重绘，并以淡入方式呈现。图下提供关键参数：最大回撤、波动率、夏普比率等，用于帮助用户快速判断风险收益特征。\n\n持仓结构模块采用可展开卡片，展示行业占比、重仓资产等，展开与收起动作带有轻微弹性动效。\n\n基金经理信息区以卡片形式呈现，从业年限、管理规模、代表产品及过往业绩，点击可查看更完整履历与管理理念。\n\n页面底部为固定操作区，提供"买入""定投"按钮。"买入"按钮轻微呼吸动效，用于强调主要行为入口。页面滑动时按钮吸附底部保持可见。整体交互克制，信息清晰，支持用户做出稳健的长期决策。',
+            'search-result': '用户搜索一只场内基金后，结果页展示该场内产品的基础信息，同时联动展示跟踪同一指数的场外对应产品。页面明确提示：场外申购更便捷、无开户门槛、费率更低，适合作为多数用户的买入选择；而场内需券商开户、交易机制复杂、存在溢价折价风险。\n\n在结果中，场外产品的"买入"按钮带有轻微的呼吸闪烁动效，引导用户优先选择场外申购；场内产品的买入按钮保持静态状态，减少误触与错误路径。整体强调透明对比、清晰引导、降低新手的交易复杂度。',
+            campaign: '生成一个春节喜庆的运营活动页面，橙红色调。活动内容为：买入理财产品得积分，积分能兑微信立减金。页面需包含理财产品卡片，卡片上应有图表展示该产品的运营数据或特点。整体设计要突出节日氛围和活动吸引力。'
         };
 
         // API Key 已移至服务器端（Vercel Serverless Function）
@@ -592,12 +603,17 @@
             container.innerHTML = '';
             
             // 推荐的5个模型（默认选中的）
+            // 1）Gemini 2.5 Flash Image (免费)
+            // 2）Gemini 3 Pro Image (免费)
+            // 3）Claude 3.5 (描述)
+            // 4）Grok 4.1 Fast (代码)
+            // 5）Claude Sonnet 4.5 (代码)
             const defaultMainPageModels = [
+                'gemini-flash',      // Gemini 2.5 Flash Image (免费)
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
-                'deepseek-v3',       // DeepSeek V3.2 (代码)
-                'claude-code',       // Claude 3.5 (代码)
-                'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
-                'claude-opus'        // Claude Opus 4.5 (代码)
+                'claude',            // Claude 3.5 (描述)
+                'grok-fast',         // Grok 4.1 Fast (代码)
+                'claude-sonnet-4.5'  // Claude Sonnet 4.5 (代码)
             ];
             
             // 获取保存的选中模型
@@ -662,11 +678,11 @@
             
             // 主页面默认显示的模型列表（推荐的5个模型）
             const defaultMainPageModels = [
+                'gemini-flash',      // Gemini 2.5 Flash Image (免费)
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
-                'deepseek-v3',       // DeepSeek V3.2 (代码)
-                'claude-code',       // Claude 3.5 (代码)
-                'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
-                'claude-opus'        // Claude Opus 4.5 (代码)
+                'claude',            // Claude 3.5 (描述)
+                'grok-fast',         // Grok 4.1 Fast (代码)
+                'claude-sonnet-4.5'  // Claude Sonnet 4.5 (代码)
             ];
             
             // 获取设置中保存的勾选状态
@@ -870,13 +886,13 @@
             const parentElement = charCountElement.parentElement;
             
             // 字符计数样式：接近限制时显示警告色
-            if (count > 800) {
-                input.value = input.value.substring(0, 800);
-                charCountElement.textContent = 800;
+            if (count > 500) {
+                input.value = input.value.substring(0, 500);
+                charCountElement.textContent = 500;
                 parentElement.className = 'absolute bottom-2 right-2 text-red-500 text-xs font-semibold';
             } else {
                 charCountElement.textContent = count;
-                if (count > 700) {
+                if (count > 450) {
                     parentElement.className = 'absolute bottom-2 right-2 text-orange-500 text-xs';
                 } else {
                     parentElement.className = 'absolute bottom-2 right-2 text-gray-500 text-xs';
@@ -921,11 +937,11 @@
             
             // 默认主页面显示的模型列表（推荐的5个模型）
             const defaultMainPageModels = [
+                'gemini-flash',      // Gemini 2.5 Flash Image (免费)
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
-                'deepseek-v3',       // DeepSeek V3.2 (代码)
-                'claude-code',       // Claude 3.5 (代码)
-                'claude-sonnet-4.5', // Claude Sonnet 4.5 (代码)
-                'claude-opus'        // Claude Opus 4.5 (代码)
+                'claude',            // Claude 3.5 (描述)
+                'grok-fast',         // Grok 4.1 Fast (代码)
+                'claude-sonnet-4.5'  // Claude Sonnet 4.5 (代码)
             ];
             
             // 保存默认选择（保存推荐的5个模型）
@@ -967,11 +983,11 @@
             
                 // 默认的5个模型
                 const defaultMainPageModels = [
+                    'gemini-flash',
                     'gemini-pro',
-                    'deepseek-v3',
-                    'claude-code',
-                    'claude-sonnet-4.5',
-                    'claude-opus'
+                    'claude',
+                    'grok-fast',
+                    'claude-sonnet-4.5'
                 ];
             
             // 判断是否与默认5个完全相同
@@ -1092,14 +1108,31 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 addResultCardPlaceholder(modelKey);
             });
 
-            // 并发调用所有模型
-            const promises = selectedModels.map(modelKey => 
-                generateWithModel(modelKey, optimizedPrompt, platform)
-            );
+            // 限制并发数量，避免429限流错误
+            const MAX_CONCURRENT = 4; // 最多同时4个请求
+            const REQUEST_DELAY = 300; // 每个请求之间延迟300ms
+            
+            // 分批处理请求，控制并发数量
+            const processInBatches = async (items, batchSize, delay) => {
+                const results = [];
+                for (let i = 0; i < items.length; i += batchSize) {
+                    const batch = items.slice(i, i + batchSize);
+                    const batchPromises = batch.map(async (modelKey, index) => {
+                        // 每个请求之间添加延迟，避免同时发起
+                        if (index > 0) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                        }
+                        return generateWithModel(modelKey, optimizedPrompt, platform);
+                    });
+                    const batchResults = await Promise.allSettled(batchPromises);
+                    results.push(...batchResults);
+                }
+                return results;
+            };
 
             try {
-                // 等待所有完成，并收集所有结果
-                const results = await Promise.allSettled(promises);
+                // 分批处理，控制并发数量
+                const results = await processInBatches(selectedModels, MAX_CONCURRENT, REQUEST_DELAY);
                 
                 // 从 Promise 结果中提取实际的结果数据
                 const allResults = results
@@ -1216,17 +1249,47 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             try {
                 let imageUrl = null;
                 let codeContent = null;
+                let actualCost = config.cost; // 默认使用配置的成本
                 
                 if (config.type === 'image') {
                     // 直接生成图片的模型（Gemini, Flux, GPT-5）
-                    imageUrl = await generateImage(config.model, prompt, platform);
+                    const imageResult = await generateImage(config.model, prompt, platform);
+                    if (typeof imageResult === 'object' && imageResult.imageUrl) {
+                        imageUrl = imageResult.imageUrl;
+                        actualCost = imageResult.actualCost !== null ? imageResult.actualCost : actualCost;
+                    } else {
+                        imageUrl = imageResult;
+                    }
                 } else if (config.type === 'code') {
                     // 生成代码的模型
-                    codeContent = await generateCode(config.model, prompt, platform);
+                    const codeResult = await generateCode(config, prompt, platform);
+                    if (typeof codeResult === 'object' && codeResult.code) {
+                        codeContent = codeResult.code;
+                        actualCost = codeResult.actualCost !== null ? codeResult.actualCost : actualCost;
+                    } else {
+                        codeContent = codeResult;
+                    }
                 } else {
                     // Claude：生成描述后用免费的Gemini生成图
-                    const description = await generateDescription(config.model, prompt);
-                    imageUrl = await generateImage('google/gemini-2.5-flash-image-preview', description, platform);
+                    const descResult = await generateDescription(config.model, prompt);
+                    let description;
+                    if (typeof descResult === 'object' && descResult.description) {
+                        description = descResult.description;
+                        actualCost = descResult.actualCost !== null ? descResult.actualCost : actualCost;
+                    } else {
+                        description = descResult;
+                    }
+                    
+                    const imageResult = await generateImage('google/gemini-2.5-flash-image-preview', description, platform);
+                    if (typeof imageResult === 'object' && imageResult.imageUrl) {
+                        imageUrl = imageResult.imageUrl;
+                        // 累加成本（描述 + 图片生成）
+                        if (imageResult.actualCost !== null) {
+                            actualCost = (actualCost || 0) + imageResult.actualCost;
+                        }
+                    } else {
+                        imageUrl = imageResult;
+                    }
                 }
 
                 // 成功：更新结果卡片
@@ -1236,7 +1299,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     modelName: config.name, 
                     imageUrl: imageUrl, 
                     codeContent: codeContent,
-                    cost: config.cost, 
+                    cost: actualCost, // 使用实际成本
                     isError: false, 
                     errorMsg: '' 
                 };
@@ -1494,6 +1557,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             debugLog('Image type:', typeof imageUrl);
             debugLog('Image length:', imageUrl.length);
             debugLog('Image preview:', imageUrl.substring(0, 100));
+
+            // 从 API 响应中提取实际成本（如果有）
+            const actualCost = data.usage?.total_cost || data.usage?.cost || null;
+            if (actualCost !== null) {
+                debugLog('💰 实际成本:', actualCost);
+                return { imageUrl, actualCost };
+            }
 
             return imageUrl;
         }
@@ -1819,19 +1889,38 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }
             
             debugLog('📝 提取的描述:', description.substring(0, 200));
+            
+            // 从 API 响应中提取实际成本（OpenRouter 返回在 usage 中）
+            const actualCost = data.usage?.total_cost || data.usage?.cost || null;
+            if (actualCost !== null) {
+                debugLog('💰 实际成本:', actualCost);
+                return { description, actualCost };
+            }
+            
             return description;
         }
 
         /**
          * 生成代码
          */
-        async function generateCode(model, prompt, platform = 'mobile') {
+        async function generateCode(modelInput, prompt, platform = 'mobile') {
+            // 允许传入模型配置对象或纯字符串
+            const modelConfig = typeof modelInput === 'object' ? modelInput : { model: modelInput };
+            const model = modelConfig.model || '';
             const platformInfo = platform === 'mobile' 
                 ? 'mobile app (iOS/Android)' 
                 : 'desktop web application';
             
+            // 语言约束：默认使用中文展示界面文案
+            // 如果用户在提示词中明确提到英文/English/海外等，则不强制中文
+            const lowerPrompt = (prompt || '').toLowerCase();
+            const hasForeignHint = /english|英文|overseas|海外|global|intl|international/.test(lowerPrompt);
+            const chineseLanguageHint = hasForeignHint 
+                ? '' 
+                : '\n\n重要：请使用简体中文展示界面中的所有文本（标题、按钮、标签、导航、提示信息等），除非提示词中明确要求使用其他语言。不要输出英文 UI 文本（品牌名和专有名词除外）。';
+            
             // 构建包含参考图片的 prompt
-            let codePrompt = `${prompt}
+            let codePrompt = `${prompt}${chineseLanguageHint}
 
 请生成完整的、可直接运行的 ${platformInfo} UI 界面代码。
 
@@ -1846,7 +1935,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 8. 使用内联样式或 <style> 标签，确保代码可以独立运行
 9. 优先保证代码质量和功能完整性，避免不必要的冗余代码
 
-请直接输出完整的 HTML 代码，不要包含任何解释文字，只输出代码。保持代码简洁，在保证功能的前提下尽量精简。`;
+请直接输出完整的 HTML 代码，不要包含任何解释文字、markdown 代码块标记（如 \`\`\`html 或 \`\`\`）或任何其他文本，只输出纯 HTML 代码。保持代码简洁，在保证功能的前提下尽量精简。`;
 
             // 构建消息内容
             let content;
@@ -1868,43 +1957,49 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 content = codePrompt;
             }
 
-            // 设置超时时间（60秒，减少等待时间，提升用户体验）
+            // 设置超时时间（根据模型类型动态调整）
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const getTimeout = (model, customTimeout) => {
+                if (customTimeout) return customTimeout;
+                // 对于响应较慢的模型，给予更长的超时时间
+                if (model.includes('claude-opus')) {
+                    return 150000; // Claude Opus: 150秒（非常慢）
+                } else if (model.includes('claude-sonnet-4.5')) {
+                    return 120000; // Claude Sonnet 4.5: 120秒
+                } else if (model.includes('deepseek') || model.includes('qwen')) {
+                    return 100000; // DeepSeek/Qwen: 100秒
+                } else if (model.includes('gpt-4')) {
+                    return 110000; // GPT-4 系列：110秒
+                } else {
+                    return 90000; // 默认：90秒
+                }
+            };
+            const timeoutDuration = getTimeout(model, modelConfig.timeout);
+            const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
             
-            try {
-                const response = await fetch(OPENROUTER_API_URL, {
+            // 带重试机制的请求函数（针对429错误）
+            const makeRequestWithRetry = async (requestBody, maxRetries = 2) => {
+                let lastError;
+                
+                for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                    try {
+                        const response = await fetch(OPENROUTER_API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
-                        // API Key 由服务器端代理处理，前端无需传递
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [
-                            {
-                                role: 'user',
-                                content: content
-                            }
-                        ],
-                        // 优化max_tokens：减少生成量以加快响应速度
-                        // 对于特定模型，根据响应速度调整
-                        max_tokens: (() => {
-                            if (model.includes(':free')) {
-                                return 4000; // 免费模型：4000 tokens（约3000字代码）
-                            } else if (model.includes('claude-opus')) {
-                                return 4000; // Claude Opus：减少到4000以加快响应
-                            } else if (model.includes('claude-sonnet-4.5')) {
-                                return 5000; // Claude Sonnet 4.5：5000 tokens
-                            } else if (model.includes('deepseek')) {
-                                return 3000; // DeepSeek：进一步减少到3000以加快响应（该模型响应较慢）
-                            } else {
-                                return 6000; // 其他付费模型：6000 tokens（足够生成完整页面）
-                            }
-                        })()
-                    }),
+                                'Content-Type': 'application/json'
+                                // API Key 由服务器端代理处理，前端无需传递
+                            },
+                            body: JSON.stringify(requestBody),
                     signal: controller.signal
                 });
+                        
+                        // 如果是429错误且还有重试次数，进行重试
+                        if (response.status === 429 && attempt < maxRetries) {
+                            const retryDelay = Math.min(2000 * Math.pow(2, attempt), 10000); // 指数退避：2s, 4s, 最多10s
+                            debugLog(`⚠️ 429限流错误，${retryDelay}ms后重试 (${attempt + 1}/${maxRetries})`);
+                            await new Promise(resolve => setTimeout(resolve, retryDelay));
+                            continue; // 重试
+                        }
                 
                 clearTimeout(timeoutId);
 
@@ -1947,7 +2042,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         } else if (statusCode === 402) {
                             errorMessage = '代码生成失败: 402 - 余额不足\n\n原因：OpenRouter账户credits不足\n解决方案：\n1. 前往OpenRouter充值credits\n2. 减少请求的token数量\n3. 使用免费模型';
                         } else if (statusCode === 401) {
-                            errorMessage = '代码生成失败: 401 - API密钥无效\n\n原因：服务器端API密钥配置错误或已过期\n解决方案：请联系管理员检查服务器配置';
+                                    errorMessage = '代码生成失败: 401 - API密钥无效\n\n原因：服务器端API密钥配置错误或已过期\n解决方案：请联系管理员检查服务器配置';
                         } else if (statusCode === 404) {
                             errorMessage = '代码生成失败: 404 - 模型不存在\n\n原因：模型ID错误或模型已下架\n解决方案：\n1. 检查模型名称是否正确\n2. 查看OpenRouter支持的模型列表';
                         } else if (errorData.error?.message) {
@@ -1966,6 +2061,56 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     
                     throw new Error(errorMessage);
                 }
+                        
+                        // 成功返回响应
+                        return response;
+                    } catch (error) {
+                        lastError = error;
+                        // 如果是429错误且还有重试次数，继续重试
+                        if (error.message.includes('429') && attempt < maxRetries) {
+                            continue;
+                        }
+                        // 其他错误或重试次数用完，抛出错误
+                        throw error;
+                    }
+                }
+                
+                // 所有重试都失败
+                throw lastError;
+            };
+            
+            try {
+                const requestBody = {
+                    model: model,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: content
+                        }
+                    ],
+                    // 优化max_tokens：减少生成量以加快响应速度
+                    // 对于特定模型，根据响应速度调整
+                    max_tokens: (() => {
+                        // 增加 max_tokens 以确保生成完整的代码（特别是包含图表、复杂交互的页面）
+                        if (model.includes(':free')) {
+                            return 6000; // 免费模型：增加到6000 tokens（约4500字代码）
+                        } else if (model.includes('claude-opus')) {
+                            return 8000; // Claude Opus：增加到8000（确保完整代码，即使响应慢也要保证完整性）
+                        } else if (model.includes('claude-sonnet-4.5')) {
+                            return 6000; // Claude Sonnet 4.5：增加到6000 tokens
+                        } else if (model.includes('gpt-4o')) {
+                            return 8000; // GPT-4o：明确设置为8000 tokens（确保完整代码）
+                        } else if (model.includes('gpt-4')) {
+                            return 8000; // GPT-4 系列：8000 tokens（确保完整代码）
+                        } else if (model.includes('deepseek') || model.includes('qwen')) {
+                            return 4000; // DeepSeek/Qwen：4000 tokens
+                        } else {
+                            return 8000; // 其他付费模型：8000 tokens（确保完整页面）
+                        }
+                    })()
+                };
+                
+                const response = await makeRequestWithRetry(requestBody);
 
                 const data = await response.json();
                 
@@ -1973,28 +2118,60 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     throw new Error('API返回格式错误');
                 }
                 
+                // 检查是否因为 max_tokens 限制导致代码被截断
+                const choice = data.choices[0];
+                if (choice.finish_reason === 'length') {
+                    console.warn('⚠️ 代码生成可能被截断（达到 max_tokens 限制）');
+                    debugLog('⚠️ finish_reason: length - 代码可能不完整');
+                }
+                
                 let code = data.choices[0].message.content;
+                
+                // 记录代码长度，用于诊断
+                debugLog('📏 生成的代码长度:', code.length, '字符');
+                debugLog('📏 生成的代码 tokens 估算:', Math.ceil(code.length / 4), 'tokens');
                 
                 // 清理/提取代码块，防止在 iframe 中显示 ```html
                 const sanitizeCode = (raw) => {
                     if (!raw) return '';
                     let cleaned = raw.trim();
                     
-                    // 优先提取 markdown 代码块
-                    const block = cleaned.match(/```[a-zA-Z]*\s*([\s\S]*?)```/);
-                    if (block && block[1]) {
-                        cleaned = block[1].trim();
+                    // 移除所有 markdown 代码块标记（包括 ```html, ```, ```html\n 等）
+                    // 优先提取 markdown 代码块内容
+                    const blockMatch = cleaned.match(/```[a-zA-Z]*\s*([\s\S]*?)```/);
+                    if (blockMatch && blockMatch[1]) {
+                        cleaned = blockMatch[1].trim();
                     } else {
                         // 如果没有匹配到标准代码块，但存在起始 ```
                         if (cleaned.startsWith('```')) {
-                            cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/,'').replace(/```$/, '').trim();
+                            // 移除开头的 ```html 或 ``` 标记
+                            cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/,'').replace(/```$/g, '').trim();
                         }
                     }
+                    
+                    // 额外清理：移除可能残留的 "html" 文本（如果出现在代码开头）
+                    // 但保留代码中实际包含的 "html" 字符串
+                    if (cleaned.startsWith('html\n') || cleaned.startsWith('html\r\n')) {
+                        cleaned = cleaned.substring(4).trim();
+                    }
+                    if (cleaned.startsWith('html')) {
+                        // 检查是否是独立的 "html" 单词（后面跟着换行或空格）
+                        const htmlMatch = cleaned.match(/^html[\s\n\r]+/);
+                        if (htmlMatch) {
+                            cleaned = cleaned.substring(htmlMatch[0].length).trim();
+                        }
+                    }
+                    
+                    // 移除代码开头的任何纯文本 "html" 标记（如果后面跟着换行）
+                    cleaned = cleaned.replace(/^html\s*\n\s*/i, '');
                     
                     return cleaned;
                 };
                 
                 code = sanitizeCode(code);
+                
+                // 调试：记录清理后的代码开头（用于排查问题）
+                debugLog('🧹 清理后的代码开头:', code.substring(0, 200));
                 
                 if (!code || code.trim().length === 0) {
                     throw new Error('生成的代码为空');
@@ -2029,11 +2206,19 @@ ${code}
                     }
                 }
                 
+                // 从 API 响应中提取实际成本（OpenRouter 返回在 usage 中）
+                const actualCost = data.usage?.total_cost || data.usage?.cost || null;
+                if (actualCost !== null) {
+                    debugLog('💰 实际成本:', actualCost);
+                    return { code, actualCost };
+                }
+                
                 return code;
             } catch (error) {
                 clearTimeout(timeoutId);
                 if (error.name === 'AbortError') {
-                    throw new Error('代码生成失败: 请求超时（60秒）\n\n原因：请求时间过长，可能网络较慢或模型响应慢\n解决方案：\n1. 检查网络连接\n2. 稍后重试\n3. 选择响应更快的模型（如Gemini 3 Pro Image或Claude 3.5）\n4. 简化提示词以减少生成时间');
+                    const timeoutSeconds = Math.round(timeoutDuration / 1000);
+                    throw new Error(`代码生成失败: 请求超时（${timeoutSeconds}秒）\n\n原因：请求时间过长，可能网络较慢或模型响应慢\n解决方案：\n1. 检查网络连接\n2. 稍后重试\n3. 选择响应更快的模型（如Gemini 3 Pro Image或Claude 3.5）\n4. 简化提示词以减少生成时间\n5. 如果是慢速模型（如Opus、Sonnet），可能需要更多时间，请耐心等待`);
                 } else if (error.message && error.message.includes('Failed to fetch')) {
                     // 网络错误
                     throw new Error(`代码生成失败: 网络连接错误\n\n原因：无法连接到OpenRouter API服务器\n可能的原因：\n- 网络连接不稳定\n- 防火墙或代理设置问题\n- API服务器暂时不可用\n- 模型ID可能不正确（${model}）\n\n解决方案：\n1. 检查网络连接\n2. 检查防火墙/代理设置\n3. 确认模型ID是否正确\n4. 稍后重试\n5. 尝试使用其他模型`);
@@ -2750,6 +2935,35 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         /**
+         * 下载代码为 HTML 文件
+         */
+        function downloadCode(codeContent, modelName) {
+            try {
+                // 清理文件名，移除特殊字符
+                const cleanName = modelName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+                const fileName = `${cleanName}_${Date.now()}.html`;
+                
+                // 创建 Blob 对象
+                const blob = new Blob([codeContent], { type: 'text/html;charset=utf-8' });
+                const downloadUrl = URL.createObjectURL(blob);
+                
+                // 创建下载链接
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // 清理 URL
+                URL.revokeObjectURL(downloadUrl);
+            } catch (error) {
+                console.error('下载代码失败:', error);
+                alert('⚠️ 下载失败，请复制代码后手动保存');
+            }
+        }
+
+        /**
          * 下载图片，去除背景并裁剪到内容边缘
          */
         async function downloadImage(url, modelName) {
@@ -2987,14 +3201,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                                     return new Promise((resolve, reject) => {
                                         img.onload = resolve;
                                         img.onerror = resolve; // 即使加载失败也继续
-                                        setTimeout(resolve, 3000); // 3秒超时
+                                        setTimeout(resolve, 5000); // 增加到5秒超时（复杂页面图片可能较多）
                                     });
                                 });
                                 
                                 await Promise.all(imagePromises);
                                 
-                                // 再等待一下确保渲染完成
-                                await new Promise(resolve => setTimeout(resolve, 500));
+                                // 再等待一下确保渲染完成（增加等待时间）
+                                await new Promise(resolve => setTimeout(resolve, 1000));
                                 
                                 if (isResolved) return;
                                 
@@ -3092,14 +3306,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         }
                     };
                     
-                    // 设置超时
+                    // 设置超时（增加到40秒，因为复杂的HTML代码需要更多时间渲染和截图）
                     timeoutId = setTimeout(() => {
                         if (!isResolved) {
                             isResolved = true;
                             cleanup();
-                            reject(new Error('代码转图片超时'));
+                            reject(new Error('代码转图片超时（40秒）'));
                         }
-                    }, 20000); // 20秒超时
+                    }, 40000); // 40秒超时
                 } catch (error) {
                     console.error('代码转图片失败:', error);
                     reject(error);
