@@ -213,7 +213,12 @@
 
                 <!-- Results -->
                 <div id="resultsContainer" class="glass rounded-3xl p-6 flex flex-col">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">📊 生成结果</h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">📊 生成结果</h2>
+                        <span id="totalCostDisplay" class="text-sm text-gray-500 hidden">
+                            本次生成总计花费 <span id="totalCostValue" class="font-mono">$0.00</span>
+                        </span>
+                    </div>
                     <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 min-h-[500px] items-center">
                         <!-- Empty State -->
                         <div class="col-span-2 flex items-center justify-center text-center text-gray-500 min-h-[400px]">
@@ -243,7 +248,7 @@
                 </div>
                 <input 
                     type="password" 
-                    id="apiKeyInput" 
+                    id="apiKeyInput"
                     placeholder="sk-or-v1-..." 
                     class="w-full p-3 rounded-lg bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
@@ -407,93 +412,93 @@
          */
         const MODEL_CONFIGS = {
             'gemini': {
-                name: 'Gemini Image (免费)',
+                name: 'Gemini Image',
                 model: 'google/gemini-2.5-flash-image-preview',
-                cost: 0,
+                cost: 0.04,
                 type: 'image'
             },
             'gemini-flash': {
-                name: 'Gemini 2.5 Flash Image (免费)',
+                name: 'Gemini 2.5 Flash Image',
                 model: 'google/gemini-2.5-flash-image',
-                cost: 0,
+                cost: 0.05,
                 type: 'image'
             },
             'gemini-pro': {
-                name: 'Gemini 3 Pro Image (免费)',
+                name: 'Gemini 3 Pro Image',
                 model: 'google/gemini-3-pro-image-preview',
-                cost: 0,
+                cost: 0.05,
                 type: 'image'
             },
             'gemini-3-pro': {
-                name: 'Gemini 3 Pro Preview (免费)',
+                name: 'Gemini 3 Pro Preview',
                 model: 'google/gemini-3-pro-preview',
-                cost: 0,
+                cost: 0.07,
                 type: 'text-to-image-desc' // 该模型返回文本描述，需要转换为图像
             },
             'flux': {
                 name: 'Flux Pro',
                 model: 'black-forest-labs/flux.2-pro',
-                cost: 0.05,
+                cost: 0.06,
                 type: 'image'
             },
             'gpt5': {
                 name: 'GPT-5 Image',
                 model: 'openai/gpt-5-image',
-                cost: 0.04,
+                cost: 0.05,
                 type: 'image'
             },
             'claude': {
                 name: 'Claude 3.5 (描述)',
                 model: 'anthropic/claude-3.5-sonnet',
-                cost: 0.01,
+                cost: 0.06,
                 type: 'text-to-image-desc'
             },
             'claude-code': {
                 name: 'Claude 3.5 (代码)',
                 model: 'anthropic/claude-3.5-sonnet',
-                cost: 0.01,
+                cost: 0.04,
                 type: 'code',
                 timeout: 100000 // 100s，Claude 3.5 偶尔较慢
             },
             'gpt4-code': {
                 name: 'GPT-4 Turbo (代码)',
                 model: 'openai/gpt-4-turbo',
-                cost: 0.01,
+                cost: 0.02,
                 type: 'code',
                 timeout: 110000 // 110s，GPT-4 Turbo 生成完整页面需要时间
             },
             'deepseek-code': {
                 name: 'DeepSeek Coder (代码)',
                 model: 'deepseek/deepseek-chat', // 使用 deepseek-chat，deepseek-coder 可能不可用
-                cost: 0.0001,
+                cost: 0.01,
                 type: 'code',
                 timeout: 120000 // 120s，DeepSeek 响应较慢
             },
             'gpt4o-code': {
                 name: 'GPT-4o (代码)',
                 model: 'openai/gpt-4o',
-                cost: 0.005,
+                cost: 0.01,
                 type: 'code',
                 timeout: 100000
             },
             'qwen-coder': {
-                name: 'Qwen3 Coder (代码) (免费)',
-                model: 'qwen/qwen3-coder:free',
-                cost: 0,
+                name: 'Qwen 2.5 (代码)',
+                model: 'qwen/qwen-2.5-72b-instruct',
+                cost: 0.01,
                 type: 'code',
                 timeout: 110000
             },
             'deepseek-v3': {
-                name: 'DeepSeek V3.2 (代码)',
-                model: 'deepseek/deepseek-v3.2',
-                cost: 0.0002,
+                name: 'DeepSeek V3 (代码)',
+                model: 'deepseek/deepseek-chat-v3.1',
+                cost: 0.01,
                 type: 'code',
                 timeout: 130000
             },
             'claude-opus': {
                 name: 'Claude Opus 4.5 (代码)',
                 model: 'anthropic/claude-opus-4.5',
-                cost: 0.02,
+                cost: 0.2,
                 type: 'code',
                 timeout: 150000 // Opus 非常慢，给足 150s
             },
@@ -507,7 +512,7 @@
             'claude-sonnet-4.5': {
                 name: 'Claude Sonnet 4.5 (代码)',
                 model: 'anthropic/claude-sonnet-4.5',
-                cost: 0.015,
+                cost: 0.08,
                 type: 'code',
                 timeout: 130000
             },
@@ -1099,6 +1104,14 @@
             document.getElementById('resultsGrid').innerHTML = '';
             document.getElementById('progressSection').classList.add('hidden');
 
+            // 重置总成本显示
+            const totalCostDisplay = document.getElementById('totalCostDisplay');
+            const totalCostValue = document.getElementById('totalCostValue');
+            if (totalCostDisplay && totalCostValue) {
+                totalCostDisplay.classList.add('hidden');
+                totalCostValue.textContent = '$0.00';
+            }
+
             // 获取平台选择
             const platformRadio = document.querySelector('input[name="platform"]:checked');
             const platform = platformRadio ? platformRadio.value : 'mobile';
@@ -1258,6 +1271,47 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     debugLog('✅ 历史记录已保存，结果数量:', resultsToSave.length);
                     console.log('✅ 历史记录保存成功');
                     
+                    // 输出实际成本汇总（便于查看和更新配置）
+                    console.log('\n💰 ========== 本次生成实际成本汇总 ==========');
+                    const costSummary = resultsToSave
+                        .filter(r => !r.isError && r.cost !== null && r.cost !== undefined)
+                        .map(r => ({
+                            modelName: r.modelName,
+                            actualCost: r.cost
+                        }))
+                        .sort((a, b) => b.actualCost - a.actualCost); // 按成本从高到低排序
+                    
+                    let totalCost = 0;
+                    if (costSummary.length > 0) {
+                        costSummary.forEach(item => {
+                            // 单模型成本：两位小数显示，最低0.01但只用于展示
+                            const displayCostPerModel = item.actualCost === 0
+                                ? 0
+                                : Math.max(0.01, parseFloat(item.actualCost.toFixed(2)));
+                            console.log(`  ${item.modelName}: $${displayCostPerModel.toFixed(2)}`);
+                            totalCost += item.actualCost || 0;
+                        });
+                        
+                        // 总成本计算：基于实际总和，再按规则显示
+                        const rawTotal = totalCost || 0;
+                        const displayTotal = rawTotal === 0
+                            ? 0
+                            : Math.max(0.01, parseFloat(rawTotal.toFixed(2)));
+                        console.log(`\n  总计: $${displayTotal.toFixed(2)}`);
+                        console.log('==========================================\n');
+
+                        // 更新界面上的总成本显示
+                        const totalCostDisplayEl = document.getElementById('totalCostDisplay');
+                        const totalCostValueEl = document.getElementById('totalCostValue');
+                        if (totalCostDisplayEl && totalCostValueEl) {
+                            totalCostDisplayEl.classList.remove('hidden');
+                            totalCostValueEl.textContent = `$${displayTotal.toFixed(2)}`;
+                        }
+                    } else {
+                        console.log('  （没有获取到实际成本数据）');
+                        console.log('==========================================\n');
+                    }
+                    
                     // 验证保存是否成功
                     setTimeout(() => {
                         const savedHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
@@ -1337,8 +1391,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     }
                 }
 
-                // 成功：更新结果卡片
-                updateResultCard(modelKey, imageUrl, codeContent, false, '');
+                // 成功：更新结果卡片（传入实际成本）
+                updateResultCard(modelKey, imageUrl, codeContent, false, '', actualCost);
                 
                 const result = { 
                     modelName: config.name, 
@@ -1545,6 +1599,19 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             const data = await response.json();
             debugLog('✅ Full API Response:', JSON.stringify(data, null, 2));
 
+            // 检查响应中是否有错误信息（即使状态码是200，也可能包含错误）
+            if (data.error) {
+                const errorMsg = data.error.message || data.error.code || 'Provider returned error';
+                console.error('❌ API返回错误:', errorMsg);
+                throw new Error(`图片生成失败: ${errorMsg}\n\n模型: ${model}\n\n可能的原因：\n- 模型提供商返回错误\n- 模型暂时不可用\n- 请求参数不正确\n\n解决方案：\n1. 稍后重试\n2. 检查模型是否可用\n3. 尝试使用其他模型`);
+            }
+
+            // 检查是否有 choices 或有效数据
+            if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+                console.error('❌ API响应格式异常:', data);
+                throw new Error(`图片生成失败: API响应格式异常\n\n模型: ${model}\n响应: ${JSON.stringify(data).substring(0, 200)}\n\n可能的原因：\n- 模型返回了意外的响应格式\n- 模型暂时不可用\n\n解决方案：\n1. 稍后重试\n2. 尝试使用其他模型`);
+            }
+
             // 尝试所有choices（有些模型可能返回多个choices）
             let imageUrl = null;
             if (data.choices && Array.isArray(data.choices)) {
@@ -1552,8 +1619,24 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     const choice = data.choices[i];
                     debugLog(`🔍 Checking choice[${i}]`);
                     
+                    // 检查 finish_reason，如果是 error 或 content_filter，说明生成失败
+                    if (choice.finish_reason === 'error' || choice.finish_reason === 'content_filter') {
+                        const errorMsg = choice.message?.content || choice.delta?.content || 'Provider returned error';
+                        console.error(`❌ Choice[${i}] finish_reason: ${choice.finish_reason}, error: ${errorMsg}`);
+                        throw new Error(`图片生成失败: ${errorMsg}\n\n模型: ${model}\n状态: ${choice.finish_reason}\n\n可能的原因：\n- 模型提供商返回错误\n- 内容被过滤\n- 模型暂时不可用\n\n解决方案：\n1. 稍后重试\n2. 修改提示词\n3. 尝试使用其他模型`);
+                    }
+                    
                     // 检查 message
                     if (choice.message) {
+                        // 检查 message 中是否有错误内容
+                        if (typeof choice.message.content === 'string' && 
+                            (choice.message.content.includes('error') || 
+                             choice.message.content.includes('Error') ||
+                             choice.message.content.includes('Provider returned error'))) {
+                            console.error(`❌ Choice[${i}] message contains error:`, choice.message.content);
+                            throw new Error(`图片生成失败: ${choice.message.content}\n\n模型: ${model}\n\n可能的原因：\n- 模型提供商返回错误\n- 模型暂时不可用\n\n解决方案：\n1. 稍后重试\n2. 尝试使用其他模型`);
+                        }
+                        
                         debugLog('📦 Message keys:', Object.keys(choice.message));
                         debugLog('📦 Message structure:', JSON.stringify(choice.message, null, 2));
                         imageUrl = extractImageFromResponse(choice.message);
@@ -1604,6 +1687,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             // 从 API 响应中提取实际成本（如果有）
             const actualCost = data.usage?.total_cost || data.usage?.cost || null;
             if (actualCost !== null) {
+                console.log(`💰 [${model}] 实际成本: $${actualCost.toFixed(4)}`);
                 debugLog('💰 实际成本:', actualCost);
                 return { imageUrl, actualCost };
             }
@@ -1934,6 +2018,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             // 从 API 响应中提取实际成本（OpenRouter 返回在 usage 中）
             const actualCost = data.usage?.total_cost || data.usage?.cost || null;
             if (actualCost !== null) {
+                console.log(`💰 [${model}] 实际成本: $${actualCost.toFixed(4)}`);
                 debugLog('💰 实际成本:', actualCost);
                 return { description, actualCost };
             }
@@ -1977,6 +2062,16 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 9. 优先保证代码质量和功能完整性，避免不必要的冗余代码
 
 请直接输出完整的 HTML 代码，不要包含任何解释文字、markdown 代码块标记（如 \`\`\`html 或 \`\`\`）或任何其他文本，只输出纯 HTML 代码。保持代码简洁，在保证功能的前提下尽量精简。`;
+
+            // 调试：输出完整的 prompt（如果启用调试模式）
+            debugLog('📝 完整代码生成 Prompt:', codePrompt.substring(0, 500) + '...');
+            if (chineseLanguageHint) {
+                console.log('✅ 已添加中文语言约束');
+                debugLog('✅ 已添加中文语言约束');
+            } else {
+                console.log('ℹ️ 未添加中文约束（检测到用户要求使用其他语言）');
+                debugLog('ℹ️ 未添加中文约束（检测到用户要求使用其他语言）');
+            }
 
             // 构建消息内容
             let content;
@@ -2248,6 +2343,7 @@ ${code}
                 // 从 API 响应中提取实际成本（OpenRouter 返回在 usage 中）
                 const actualCost = data.usage?.total_cost || data.usage?.cost || null;
                 if (actualCost !== null) {
+                    console.log(`💰 [${model}] 实际成本: $${actualCost.toFixed(4)}`);
                     debugLog('💰 实际成本:', actualCost);
                     return { code, actualCost };
                 }
@@ -2307,7 +2403,7 @@ ${code}
         }
 
         // 更新结果卡片状态
-        function updateResultCard(modelKey, imageUrl = null, codeContent = null, isError = false, errorMsg = '') {
+        function updateResultCard(modelKey, imageUrl = null, codeContent = null, isError = false, errorMsg = '', actualCost = null) {
             const card = document.getElementById(`result-card-${modelKey}`);
             if (!card) {
                 console.warn(`Card not found for model: ${modelKey}`);
@@ -2315,6 +2411,8 @@ ${code}
             }
             
             const config = MODEL_CONFIGS[modelKey];
+            // 优先使用实际成本，如果没有则使用配置的成本
+            const displayCost = actualCost !== null ? actualCost : (config ? config.cost : 0);
             
             // 清空卡片内容
             card.innerHTML = '';
@@ -2337,7 +2435,7 @@ ${code}
                 infoDiv.innerHTML = `
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-gray-800 font-semibold">${config.name}</span>
-                        <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                        <span class="text-gray-600 text-sm">$${displayCost.toFixed(4)}</span>
                     </div>
                     <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
                         🔄 重试
@@ -2435,7 +2533,7 @@ ${code}
                 infoDiv.innerHTML = `
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-gray-800 font-semibold">${config.name}</span>
-                        <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                        <span class="text-gray-600 text-sm">$${displayCost.toFixed(4)}</span>
                     </div>
                     <div class="flex gap-2">
                         <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
@@ -2541,7 +2639,7 @@ ${code}
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-gray-800 font-semibold">${config.name}</span>
-                            <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                            <span class="text-gray-600 text-sm">$${displayCost.toFixed(4)}</span>
                         </div>
                         <div class="flex gap-2">
                             <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
@@ -3514,10 +3612,40 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 console.error('❌ 保存历史记录失败:', error);
                 console.error('错误堆栈:', error.stack);
                 console.error('错误详情:', {
-                    prompt: prompt.substring(0, 30),
-                    resultsLength: results.length,
-                    error: error.message
+                    promptLength: prompt.length,
+                    platform: platform,
+                    resultsCount: results.length,
+                    errorMessage: error.message
                 });
+                // 尝试保存简化版本（不生成缩略图）
+                try {
+                    const existingHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
+                    const simplifiedHistoryItem = {
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        prompt: prompt,
+                        platform: platform,
+                        platformText: platform === 'mobile' ? '手机端' : 'PC端',
+                        selectedModels: selectedModels,
+                        results: results.map(r => ({
+                            modelName: r.modelName,
+                            cost: r.cost || 0,
+                            isError: r.isError || false,
+                            errorMsg: r.errorMsg || '',
+                            thumbnail: null,
+                            imageUrl: r.imageUrl || null,
+                            codeContent: r.codeContent || null
+                        })),
+                        totalCost: results.reduce((sum, r) => sum + (r.cost || 0), 0)
+                    };
+                    existingHistory.unshift(simplifiedHistoryItem);
+                    const finalHistory = existingHistory.length > 50 ? existingHistory.slice(0, 50) : existingHistory;
+                    generationHistory = finalHistory;
+                    localStorage.setItem('generation_history', JSON.stringify(finalHistory));
+                    console.log('✅ 已保存简化版历史记录（无缩略图）');
+                } catch (fallbackError) {
+                    console.error('❌ 保存简化版历史记录也失败:', fallbackError);
+                }
             }
         }
 
