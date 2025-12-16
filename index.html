@@ -666,18 +666,24 @@
             
             container.innerHTML = '';
             
-            // 推荐的5个模型（默认选中的）
+            // 推荐的8个模型（默认选中的）
             // 1）Gemini 2.5 Flash Image (免费)
             // 2）Gemini 3 Pro Image (免费)
             // 3）Claude 3.5 (描述)
             // 4）Grok 4.1 Fast (代码)
-            // 5）Claude Sonnet 4.5 (代码)
+            // 5）Claude Haiku 4.5 (代码)
+            // 6）DeepSeek Coder (代码)
+            // 7）Qwen 2.5 (代码)
+            // 8）DeepSeek V3 (代码)
             const defaultMainPageModels = [
                 'gemini-flash',      // Gemini 2.5 Flash Image (免费)
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
                 'claude',            // Claude 3.5 (描述)
                 'grok-fast',         // Grok 4.1 Fast (代码)
-                'claude-sonnet-4.5'  // Claude Sonnet 4.5 (代码)
+                'claude-haiku-4.5',  // Claude Haiku 4.5 (代码)
+                'deepseek-code',     // DeepSeek Coder (代码)
+                'qwen-coder',        // Qwen 2.5 (代码)
+                'deepseek-v3'        // DeepSeek V3 (代码)
             ];
             
             // 获取保存的选中模型
@@ -740,20 +746,23 @@
             
             container.innerHTML = '';
             
-            // 主页面默认显示的模型列表（推荐的5个模型）
+            // 主页面默认显示的模型列表（推荐的8个模型）
             const defaultMainPageModels = [
                 'gemini-flash',      // Gemini 2.5 Flash Image (免费)
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
                 'claude',            // Claude 3.5 (描述)
                 'grok-fast',         // Grok 4.1 Fast (代码)
-                'claude-sonnet-4.5'  // Claude Sonnet 4.5 (代码)
+                'claude-haiku-4.5',  // Claude Haiku 4.5 (代码)
+                'deepseek-code',     // DeepSeek Coder (代码)
+                'qwen-coder',        // Qwen 2.5 (代码)
+                'deepseek-v3'        // DeepSeek V3 (代码)
             ];
             
             // 获取设置中保存的勾选状态
             const savedSelected = JSON.parse(localStorage.getItem('selected_models') || '[]');
             
             // 判断用户是否在设置中修改过模型选择
-            // 如果保存的选择与默认5个完全相同，说明用户没有修改过
+            // 如果保存的选择与默认6个完全相同，说明用户没有修改过
             const isDefaultSelection = savedSelected.length === defaultMainPageModels.length &&
                 savedSelected.every(key => defaultMainPageModels.includes(key)) &&
                 defaultMainPageModels.every(key => savedSelected.includes(key));
@@ -761,7 +770,7 @@
             // 确定要显示的模型列表
             const availableModels = (savedSelected.length > 0 && !isDefaultSelection)
                 ? savedSelected.filter(key => MODEL_CONFIGS[key]) // 用户修改过，显示设置中选中的模型
-                : defaultMainPageModels.filter(key => MODEL_CONFIGS[key]); // 用户未修改，显示推荐的5个模型
+                : defaultMainPageModels.filter(key => MODEL_CONFIGS[key]); // 用户未修改，显示推荐的6个模型
             
             if (availableModels.length === 0) {
                 container.innerHTML = '<div class="text-gray-500 text-sm p-3">请在设置中选择至少一个模型</div>';
@@ -1001,16 +1010,19 @@
                 return;
             }
             
-            // 默认主页面显示的模型列表（推荐的5个模型）
+            // 默认主页面显示的模型列表（推荐的8个模型）
             const defaultMainPageModels = [
                 'gemini-flash',      // Gemini 2.5 Flash Image (免费)
                 'gemini-pro',        // Gemini 3 Pro Image (免费)
                 'claude',            // Claude 3.5 (描述)
                 'grok-fast',         // Grok 4.1 Fast (代码)
-                'claude-sonnet-4.5'  // Claude Sonnet 4.5 (代码)
+                'claude-haiku-4.5',  // Claude Haiku 4.5 (代码)
+                'deepseek-code',     // DeepSeek Coder (代码)
+                'qwen-coder',        // Qwen 2.5 (代码)
+                'deepseek-v3'        // DeepSeek V3 (代码)
             ];
             
-            // 保存默认选择（保存推荐的5个模型）
+            // 保存默认选择（保存推荐的8个模型）
             localStorage.setItem('selected_models', JSON.stringify(defaultMainPageModels));
             
             // 清除上次生成时的选择
@@ -1022,7 +1034,7 @@
             // 更新主界面显示（会显示这5个模型，默认只勾选免费模型）
             loadModelSelectionList();
             
-            alert('✅ 已恢复默认模型选择\n\n主页面将显示推荐的5个模型，默认勾选免费模型');
+            alert('✅ 已恢复默认模型选择\n\n主页面将显示推荐的6个模型，默认勾选免费模型');
         }
 
         function saveSettings() {
@@ -1054,16 +1066,19 @@
                     return;
                 }
             
-                // 默认的5个模型
+                // 默认的8个模型
                 const defaultMainPageModels = [
                     'gemini-flash',
                     'gemini-pro',
                     'claude',
                     'grok-fast',
-                    'claude-sonnet-4.5'
+                    'claude-haiku-4.5',
+                    'deepseek-code',
+                    'qwen-coder',
+                    'deepseek-v3'
                 ];
             
-            // 判断是否与默认5个完全相同
+            // 判断是否与默认8个完全相同
             const isDefaultSelection = selectedModels.length === defaultMainPageModels.length &&
                 selectedModels.every(key => defaultMainPageModels.includes(key)) &&
                 defaultMainPageModels.every(key => selectedModels.includes(key));
