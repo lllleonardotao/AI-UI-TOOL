@@ -4,68 +4,347 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI UI Comparator</title>
-    <!-- Favicon - SVG格式，使用页面主题渐变色 -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23764ba2;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23grad)'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white' font-family='Arial,sans-serif'%3E🎨%3C/text%3E%3C/svg%3E" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23667eea;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23764ba2;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23grad)'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='white' font-family='Arial,sans-serif'%3E🎨%3C/text%3E%3C/svg%3E">
+    <!-- Favicon - 琥珀金色主题 -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23f59e0b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23d97706;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='16' fill='%230c0a09'/%3E%3Crect x='8' y='8' width='84' height='84' rx='12' fill='none' stroke='url(%23grad)' stroke-width='2'/%3E%3Ctext x='50' y='68' font-size='48' text-anchor='middle' fill='url(%23grad)' font-family='system-ui'%3E◈%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23f59e0b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23d97706;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='16' fill='%230c0a09'/%3E%3Crect x='8' y='8' width='84' height='84' rx='12' fill='none' stroke='url(%23grad)' stroke-width='2'/%3E%3Ctext x='50' y='68' font-size='48' text-anchor='middle' fill='url(%23grad)' font-family='system-ui'%3E◈%3C/text%3E%3C/svg%3E">
+    
+    <!-- 字体：Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        surface: {
+                            DEFAULT: '#0c0a09',
+                            raised: '#1c1917',
+                            overlay: '#292524',
+                        },
+                        accent: {
+                            DEFAULT: '#f59e0b',
+                            hover: '#fbbf24',
+                            muted: '#92400e',
+                        },
+                        mint: {
+                            DEFAULT: '#34d399',
+                            muted: '#065f46',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
-        /* 玻璃态效果 - 增强对比度 */
+        /* ═══════════════════════════════════════════════════════════
+           DESIGN SYSTEM: Dark Editorial
+           - Deep ink backgrounds with subtle warmth
+           - Amber/gold accents for primary actions
+           - Mint/emerald for success states
+           - Refined typography with generous spacing
+        ═══════════════════════════════════════════════════════════ */
+        
+        :root {
+            --surface: #0c0a09;
+            --surface-raised: #1c1917;
+            --surface-overlay: #292524;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-default: rgba(255, 255, 255, 0.12);
+            --text-primary: #fafaf9;
+            --text-secondary: #a8a29e;
+            --text-muted: #78716c;
+            --accent: #f59e0b;
+            --accent-hover: #fbbf24;
+            --accent-glow: rgba(245, 158, 11, 0.25);
+            --mint: #34d399;
+            --error: #f87171;
+        }
+        
+        /* 基础样式 */
+        body {
+            background: var(--surface);
+            background-image: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.08), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(52, 211, 153, 0.05), transparent);
+            min-height: 100vh;
+            color: var(--text-primary);
+            font-feature-settings: 'cv11', 'ss01';
+            letter-spacing: -0.01em;
+        }
+        
+        /* 噪点纹理叠加 */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.02;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background: var(--surface-raised);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card:hover {
+            border-color: var(--border-default);
+            box-shadow: 0 0 0 1px var(--border-default);
+        }
+        
+        .card-glow {
+            background: var(--surface-raised);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card-glow:hover::before {
+            opacity: 0.6;
+        }
+        
+        /* 玻璃态效果 - 深色版本 */
         .glass {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            background: rgba(28, 25, 23, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            box-shadow: 
+                0 4px 6px -1px rgba(0, 0, 0, 0.3),
+                0 2px 4px -2px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
         }
         
         .glass-dark {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(41, 37, 36, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
         }
         
-        /* 渐变背景 */
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        .glass-dark:hover {
+            background: rgba(41, 37, 36, 0.8);
+            border-color: var(--border-default);
         }
         
-        /* 按钮动画 */
+        /* 主按钮 */
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--accent) 0%, #d97706 100%);
+            color: #0c0a09;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 
+                0 10px 40px -10px var(--accent-glow),
+                0 4px 12px -4px rgba(0, 0, 0, 0.5);
         }
         
-        /* 加载动画 */
+        .btn-primary:hover::before {
+            opacity: 1;
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 次要按钮 */
+        .btn-secondary {
+            background: var(--surface-overlay);
+            border: 1px solid var(--border-default);
+            color: var(--text-primary);
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(41, 37, 36, 0.9);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        /* 输入框 */
+        .input-field {
+            background: var(--surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        
+        /* 加载动画 - 更优雅的版本 */
         .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
             width: 40px;
             height: 40px;
-            animation: spin 1s linear infinite;
+            border: 2px solid var(--surface-overlay);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
         
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 脉冲发光动画 */
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 0 0 20px var(--accent-glow);
+                opacity: 1;
+            }
+            50% { 
+                box-shadow: 0 0 40px var(--accent-glow);
+                opacity: 0.8;
+            }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
         }
         
         /* 图片卡片 */
         .image-card {
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
         }
         
         .image-card:hover {
-            transform: scale(1.05);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 20px 40px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px var(--border-default);
         }
         
-        /* 隐藏滚动条但保持功能 */
+        /* 错落入场动画 */
+        @keyframes card-enter {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .card-animate {
+            animation: card-enter 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+        }
+        
+        .card-animate:nth-child(1) { animation-delay: 0ms; }
+        .card-animate:nth-child(2) { animation-delay: 80ms; }
+        .card-animate:nth-child(3) { animation-delay: 160ms; }
+        .card-animate:nth-child(4) { animation-delay: 240ms; }
+        .card-animate:nth-child(5) { animation-delay: 320ms; }
+        .card-animate:nth-child(6) { animation-delay: 400ms; }
+        
+        /* 标签/徽章 */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        
+        .badge-accent {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        
+        .badge-mint {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--mint);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+        
+        .badge-error {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--error);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+        
+        /* 自定义滚动条 */
+        .scrollbar-styled::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .scrollbar-styled::-webkit-scrollbar-track {
+            background: var(--surface);
+            border-radius: 3px;
+        }
+        
+        .scrollbar-styled::-webkit-scrollbar-thumb {
+            background: var(--surface-overlay);
+            border-radius: 3px;
+        }
+        
+        .scrollbar-styled::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+        
+        /* 隐藏滚动条 */
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
@@ -74,53 +353,196 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        
+        /* 选择框样式 */
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a8a29e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+            appearance: none;
+        }
+        
+        /* 复选框自定义样式 */
+        input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-default);
+            border-radius: 4px;
+            background: var(--surface);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        
+        input[type="checkbox"]:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 5px;
+            height: 9px;
+            border: solid #0c0a09;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        input[type="checkbox"]:focus {
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        
+        /* 单选框自定义样式 */
+        input[type="radio"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-default);
+            border-radius: 50%;
+            background: var(--surface);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        
+        input[type="radio"]:checked {
+            border-color: var(--accent);
+        }
+        
+        input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        input[type="radio"]:focus {
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        
+        /* 模态框背景动画 */
+        .modal-backdrop {
+            animation: fade-in 0.2s ease;
+        }
+        
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 文字渐变效果 */
+        .text-gradient {
+            background: linear-gradient(135deg, var(--accent) 0%, #fcd34d 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 分隔线 */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+        }
+        
+        /* 提示框样式 */
+        .tip-box {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+        
+        .tip-box-info {
+            background: rgba(96, 165, 250, 0.08);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+        }
+        
+        /* 头部标题装饰 */
+        .title-decoration {
+            position: relative;
+        }
+        
+        .title-decoration::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-7xl mx-auto">
+<body class="p-4 md:p-8 font-sans antialiased">
+    <div class="max-w-7xl mx-auto relative">
         <!-- Header -->
-        <div class="glass rounded-3xl p-6 mb-6">
+        <header class="glass rounded-2xl p-5 mb-8 border border-stone-800/50">
             <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <!-- Logo -->
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                        <span class="text-stone-900 text-xl font-bold">◈</span>
+                    </div>
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-2">✨ AI UI Comparator</h1>
-                    <p class="text-gray-600">一键对比多个AI模型的UI设计生成效果</p>
+                        <h1 class="text-2xl font-bold tracking-tight">
+                            <span class="text-gradient">AI UI</span>
+                            <span class="text-stone-100"> Comparator</span>
+                        </h1>
+                        <p class="text-stone-500 text-sm mt-0.5">多模型 UI 设计对比生成器</p>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="showHistory()" class="glass-dark text-gray-800 font-medium px-4 py-2 rounded-xl hover:bg-white/30 transition">
-                        📜 历史记录
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="showHistory()" class="btn-secondary px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        历史记录
                     </button>
-                <button onclick="showSettings()" class="glass-dark text-gray-800 font-medium px-4 py-2 rounded-xl hover:bg-white/30 transition">
-                    ⚙️ 设置
+                    <button onclick="showSettings()" class="btn-secondary px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        设置
                 </button>
                 </div>
             </div>
-        </div>
+        </header>
 
         <!-- Main Content -->
-        <div class="grid md:grid-cols-3 gap-6">
+        <div class="grid md:grid-cols-12 gap-6">
             <!-- Left: Input Panel -->
-            <div class="md:col-span-1">
-                <div class="glass rounded-3xl p-6 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">💬 输入需求</h2>
+            <div class="md:col-span-4">
+                <div class="glass rounded-2xl p-6 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-styled">
+                    <h2 class="text-lg font-bold text-stone-100 mb-5 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </span>
+                        输入需求
+                    </h2>
                     
                     <!-- Prompt Input -->
-                    <div class="mb-4">
-                        <label class="text-gray-700 text-sm font-medium mb-2 block">描述你想要的UI界面</label>
+                    <div class="mb-5">
+                        <label class="text-stone-400 text-xs font-medium mb-2 block uppercase tracking-wider">描述你想要的UI界面</label>
                         <div class="relative">
                         <textarea 
                             id="promptInput"
-                            rows="3"
-                            maxlength="500"
-                                class="w-full p-4 pr-16 pb-20 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-                            placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
+                                rows="4"
+                                maxlength="500"
+                                class="w-full p-4 pr-16 pb-16 rounded-xl input-field resize-none text-sm leading-relaxed"
+                                placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮..."
                         ></textarea>
                             
                             <!-- 图片上传区域（左下角） -->
-                            <div class="absolute bottom-6 left-2 flex items-center gap-2 flex-wrap">
-                                <!-- 已上传的图片预览 -->
+                            <div class="absolute bottom-3 left-3 flex items-center gap-2 flex-wrap">
                                 <div id="referenceImagesContainer" class="flex items-center gap-2 flex-wrap"></div>
-                                
-                                <!-- 添加图片按钮 -->
                                 <input 
                                     type="file" 
                                     id="referenceImageInput" 
@@ -132,99 +554,110 @@
                                 <button 
                                     type="button"
                                     onclick="document.getElementById('referenceImageInput').click()"
-                                    class="w-10 h-10 flex items-center justify-center bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition shadow-lg"
+                                    class="w-9 h-9 flex items-center justify-center bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-amber-500 rounded-lg transition border border-stone-700"
                                     title="添加参考图片"
                                 >
-                                    <span class="text-xl font-bold">+</span>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </button>
                             </div>
                             
                             <!-- 字符计数（右下角） -->
-                            <div class="absolute bottom-5 right-3 text-gray-500 text-xs">
-                            <span id="charCount">0</span>/500
+                            <div class="absolute bottom-3 right-3 text-stone-600 text-xs font-mono">
+                                <span id="charCount">0</span><span class="text-stone-700">/500</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Quick Templates (移到输入框下方) -->
-                    <div class="mb-4">
+                    <!-- Quick Templates -->
+                    <div class="mb-5">
+                        <label class="text-stone-400 text-xs font-medium mb-2 block uppercase tracking-wider">快捷模板</label>
                         <div class="flex flex-wrap gap-2">
-                            <button onclick="useTemplate('dashboard')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">理财仪表盘</button>
-                            <button onclick="useTemplate('search-result')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">搜索场内</button>
-                            <button onclick="useTemplate('campaign')" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/20 transition">运营活动</button>
+                            <button onclick="useTemplate('dashboard')" class="text-xs bg-stone-800/50 hover:bg-stone-800 text-stone-400 hover:text-amber-500 font-medium px-3 py-1.5 rounded-lg transition border border-stone-700/50 hover:border-amber-500/30">理财仪表盘</button>
+                            <button onclick="useTemplate('search-result')" class="text-xs bg-stone-800/50 hover:bg-stone-800 text-stone-400 hover:text-amber-500 font-medium px-3 py-1.5 rounded-lg transition border border-stone-700/50 hover:border-amber-500/30">搜索场内</button>
+                            <button onclick="useTemplate('campaign')" class="text-xs bg-stone-800/50 hover:bg-stone-800 text-stone-400 hover:text-amber-500 font-medium px-3 py-1.5 rounded-lg transition border border-stone-700/50 hover:border-amber-500/30">运营活动</button>
                         </div>
                     </div>
 
-                    <!-- 并排显示：目标平台、选择AI模型、预计成本 -->
-                    <div class="grid grid-cols-1 gap-4 mb-4">
+                    <div class="divider my-5"></div>
+
                         <!-- Platform Selection -->
-                        <div>
-                        <label class="text-gray-700 text-sm font-medium mb-2 block">📱 目标平台</label>
-                        <div class="flex gap-2">
-                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="radio" name="platform" value="mobile" class="mr-2" checked>
-                                    <span class="text-gray-800 font-medium text-sm">手机端</span>
+                    <div class="mb-5">
+                        <label class="text-stone-400 text-xs font-medium mb-3 block uppercase tracking-wider">目标平台</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center justify-center gap-2 bg-stone-800/30 hover:bg-stone-800/50 p-3 rounded-xl cursor-pointer transition border border-stone-700/50 has-[:checked]:border-amber-500/50 has-[:checked]:bg-amber-500/10">
+                                <input type="radio" name="platform" value="mobile" class="sr-only" checked>
+                                <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                <span class="text-stone-300 font-medium text-sm">手机端</span>
                             </label>
-                            <label class="flex-1 flex items-center justify-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition">
-                                <input type="radio" name="platform" value="desktop" class="mr-2">
-                                    <span class="text-gray-800 font-medium text-sm">PC端</span>
+                            <label class="flex items-center justify-center gap-2 bg-stone-800/30 hover:bg-stone-800/50 p-3 rounded-xl cursor-pointer transition border border-stone-700/50 has-[:checked]:border-amber-500/50 has-[:checked]:bg-amber-500/10">
+                                <input type="radio" name="platform" value="desktop" class="sr-only">
+                                <svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                <span class="text-stone-300 font-medium text-sm">PC端</span>
                             </label>
                         </div>
                     </div>
 
                     <!-- Model Selection -->
-                        <div>
-                        <label class="text-gray-700 text-sm font-medium mb-2 block">🎨 选择AI模型</label>
-                            <div class="space-y-2 max-h-48 overflow-y-auto" id="modelSelectionList">
+                    <div class="mb-5">
+                        <label class="text-stone-400 text-xs font-medium mb-3 block uppercase tracking-wider">选择AI模型</label>
+                        <div class="space-y-2 max-h-52 overflow-y-auto scrollbar-styled pr-1" id="modelSelectionList">
                                 <!-- 模型列表将在这里动态生成 -->
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Cost Estimate and Generate Button (贴在一起) -->
-                    <div class="space-y-0">
-                    <!-- Cost Estimate -->
-                        <div class="bg-purple-100 p-3 rounded-t-xl">
-                        <div class="flex justify-between text-gray-700 text-sm font-medium">
-                            <span>预计成本</span>
-                            <span id="costEstimate" class="font-mono">$0.10</span>
+                    <!-- Cost Estimate and Generate Button -->
+                    <div class="mt-6">
+                        <div class="bg-stone-800/50 p-4 rounded-t-xl border border-stone-700/50 border-b-0">
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-400 text-sm">预计成本</span>
+                                <span id="costEstimate" class="text-amber-500 font-bold font-mono text-lg">$0.00</span>
                         </div>
                     </div>
-
-                    <!-- Generate Button -->
                     <button 
                         onclick="startGeneration()"
                         id="generateBtn"
-                            class="w-full btn-primary text-white font-bold py-4 rounded-b-xl rounded-t-none"
+                            class="w-full btn-primary py-4 rounded-b-xl rounded-t-none text-base flex items-center justify-center gap-2"
                     >
-                        🚀 开始生成
+                            <span>开始生成</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </button>
                     </div>
                 </div>
             </div>
 
             <!-- Right: Results Panel -->
-            <div class="md:col-span-2">
+            <div class="md:col-span-8">
                 <!-- Progress -->
-                <div id="progressSection" class="glass rounded-3xl p-6 mb-6 hidden">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">⏳ 生成进度</h2>
+                <div id="progressSection" class="glass rounded-2xl p-6 mb-6 hidden">
+                    <h2 class="text-lg font-bold text-stone-100 mb-4 flex items-center gap-2">
+                        <div class="spinner w-5 h-5"></div>
+                        生成进度
+                    </h2>
                     <div class="space-y-3" id="progressList"></div>
                 </div>
 
                 <!-- Results -->
-                <div id="resultsContainer" class="glass rounded-3xl p-6 flex flex-col">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xl font-bold text-gray-800">📊 生成结果</h2>
-                        <span id="totalCostDisplay" class="text-sm text-gray-500 hidden">
-                            本次生成总计花费 <span id="totalCostValue" class="font-mono">$0.00</span>
+                <div id="resultsContainer" class="glass rounded-2xl p-6 flex flex-col min-h-[600px]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-bold text-stone-100 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </span>
+                            生成结果
+                        </h2>
+                        <span id="totalCostDisplay" class="text-sm text-stone-500 hidden">
+                            本次花费 <span id="totalCostValue" class="font-mono text-amber-500">$0.00</span>
                         </span>
                     </div>
-                    <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 min-h-[500px] items-center">
+                    <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-1 items-start">
                         <!-- Empty State -->
-                        <div class="col-span-2 flex items-center justify-center text-center text-gray-500 min-h-[400px]">
-                            <div>
-                            <div class="text-6xl mb-4">🎨</div>
-                            <p>输入你的需求，点击生成按钮开始创作</p>
+                        <div class="col-span-2 flex items-center justify-center text-center min-h-[450px]">
+                            <div class="max-w-sm">
+                                <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-stone-800/50 flex items-center justify-center border border-stone-700/50">
+                                    <svg class="w-10 h-10 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <h3 class="text-stone-300 font-semibold mb-2">准备开始创作</h3>
+                                <p class="text-stone-500 text-sm leading-relaxed">输入你的 UI 设计需求，选择想要对比的 AI 模型，点击生成按钮即可开始</p>
                             </div>
                         </div>
                     </div>
@@ -234,61 +667,79 @@
     </div>
 
     <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="glass rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">⚙️ 设置</h2>
+    <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center p-4 z-50 modal-backdrop">
+        <div class="glass rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-styled border border-stone-700/50">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-stone-100 flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-xl bg-stone-800 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    设置
+                </h2>
+                <button onclick="closeSettings()" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-stone-700 flex items-center justify-center text-stone-400 hover:text-stone-200 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
             
             <!-- API Key 配置 -->
             <div class="mb-6">
-                <label class="text-gray-700 text-sm font-medium mb-2 block">🔑 OpenRouter API Key（可选）</label>
-                <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p class="text-blue-800 text-xs">
-                        💡 如果不填写，将使用服务器端的公用 API Key。填写你自己的 API Key 后，将优先使用你的 Key。
+                <label class="text-stone-400 text-xs font-medium mb-3 block uppercase tracking-wider">OpenRouter API Key（可选）</label>
+                <div class="tip-box-info mb-3">
+                    <p class="text-blue-400 text-xs flex items-start gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>如果不填写，将使用服务器端的公用 API Key。填写你自己的 API Key 后，将优先使用你的 Key。</span>
                     </p>
                 </div>
                 <input 
                     type="password" 
                     id="apiKeyInput"
                     placeholder="sk-or-v1-..." 
-                    class="w-full p-3 rounded-lg bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    class="w-full p-3 rounded-xl input-field text-sm"
                 >
-                <p class="text-gray-600 text-xs mt-1">
-                    获取 API Key：<a href="https://openrouter.ai/keys" target="_blank" class="text-purple-600 hover:underline">https://openrouter.ai/keys</a>
+                <p class="text-stone-500 text-xs mt-2">
+                    获取 API Key：<a href="https://openrouter.ai/keys" target="_blank" class="text-amber-500 hover:text-amber-400 hover:underline">openrouter.ai/keys</a>
                 </p>
             </div>
 
+            <div class="divider my-6"></div>
+
             <!-- Model Selection -->
             <div class="mb-6">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="text-gray-700 text-sm font-medium block">🎨 选择AI模型（至少选择一个）</label>
-                    <button onclick="resetToDefaultModels()" class="text-xs glass-dark text-gray-700 font-medium px-3 py-1 rounded-lg hover:bg-white/30 transition">
-                        🔄 恢复默认选择
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-stone-400 text-xs font-medium block uppercase tracking-wider">选择AI模型</label>
+                    <button onclick="resetToDefaultModels()" class="text-xs bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-amber-500 font-medium px-3 py-1.5 rounded-lg transition border border-stone-700">
+                        恢复默认
                 </button>
             </div>
-                <div class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p class="text-yellow-800 text-xs">💡 至少需要选择一个模型才能生成内容</p>
+                <div class="tip-box mb-3">
+                    <p class="text-amber-400/80 text-xs flex items-start gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <span>至少需要选择一个模型才能生成内容</span>
+                    </p>
                     </div>
-                <div id="settingsModelList" class="space-y-2 max-h-96 overflow-y-auto">
+                <div id="settingsModelList" class="space-y-2 max-h-80 overflow-y-auto scrollbar-styled pr-1">
                     <!-- 模型列表将在这里动态生成 -->
                 </div>
             </div>
 
+            <div class="divider my-6"></div>
+
             <!-- Debug Mode -->
             <div class="mb-6">
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" id="debugMode" class="mr-2">
-                    <span class="text-gray-700 text-sm font-medium">🐛 启用调试模式（显示详细日志）</span>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" id="debugMode" class="mr-3">
+                    <span class="text-stone-300 text-sm font-medium group-hover:text-stone-100 transition">启用调试模式</span>
                 </label>
-                <p class="text-gray-600 text-xs mt-1 ml-6">
-                    开启后会在控制台显示详细的API请求和响应信息
+                <p class="text-stone-500 text-xs mt-2 ml-7">
+                    开启后会在控制台显示详细的 API 请求和响应信息
                 </p>
             </div>
 
-            <div class="flex gap-3">
-                <button onclick="saveSettings()" class="flex-1 btn-primary text-white font-bold py-3 rounded-xl">
-                    保存
+            <div class="flex gap-3 mt-8">
+                <button onclick="saveSettings()" class="flex-1 btn-primary py-3.5 rounded-xl font-semibold">
+                    <span>保存设置</span>
                 </button>
-                <button onclick="closeSettings()" class="flex-1 glass-dark text-gray-800 font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                <button onclick="closeSettings()" class="flex-1 btn-secondary py-3.5 rounded-xl font-semibold">
                     取消
                 </button>
             </div>
@@ -296,42 +747,55 @@
     </div>
 
     <!-- History Modal -->
-    <div id="historyModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="glass rounded-3xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold text-gray-800">📜 生成历史</h2>
-                <button onclick="closeHistory()" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+    <div id="historyModal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center p-4 z-50 modal-backdrop">
+        <div class="glass rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-styled border border-stone-700/50">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-stone-100 flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-xl bg-stone-800 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </span>
+                    生成历史
+                </h2>
+                <button onclick="closeHistory()" class="w-10 h-10 rounded-xl bg-stone-800 hover:bg-stone-700 flex items-center justify-center text-stone-400 hover:text-stone-200 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
             
             <!-- 花费明细统计 -->
-            <div id="costStatistics" class="mb-4 glass-dark rounded-xl p-4 hidden">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-lg font-bold text-gray-800">💰 花费明细统计</h3>
-                    <button id="toggleCostStats" onclick="toggleCostStatistics()" class="text-gray-600 hover:text-gray-800 text-sm font-medium px-3 py-1 rounded-lg hover:bg-white/30 transition">
-                        <span id="toggleCostStatsText">展开</span>
+            <div id="costStatistics" class="mb-5 bg-stone-800/50 rounded-xl p-4 border border-stone-700/50 hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-stone-200 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        花费统计
+                    </h3>
+                    <button id="toggleCostStats" onclick="toggleCostStatistics()" class="text-xs bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium px-3 py-1.5 rounded-lg transition">
+                        <span id="toggleCostStatsText">展开详情</span>
                     </button>
                 </div>
-                <div id="costStatsSummary" class="text-sm">
+                <div id="costStatsSummary" class="text-sm text-stone-300">
                     <!-- 默认显示的摘要信息 -->
                 </div>
-                <div id="costStatsDetails" class="space-y-2 text-sm hidden">
+                <div id="costStatsDetails" class="space-y-2 text-sm hidden mt-4 pt-4 border-t border-stone-700/50">
                     <!-- 详细统计内容将在这里动态加载 -->
                 </div>
             </div>
             
             <!-- 搜索和筛选 -->
-            <div class="mb-4 space-y-2">
-                <div class="flex gap-2">
+            <div class="mb-5 space-y-3">
+                <div class="flex gap-3">
+                    <div class="flex-1 relative">
+                        <svg class="w-4 h-4 text-stone-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     <input 
                         type="text" 
                         id="historySearch" 
-                        placeholder="🔍 搜索历史记录..." 
-                        class="flex-1 p-2 rounded-lg bg-white/50 border border-gray-300 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="搜索历史记录..." 
+                            class="w-full pl-10 pr-4 py-2.5 rounded-xl input-field text-sm"
                         oninput="filterHistory()"
                     >
+                    </div>
                     <select 
                         id="historyFilter" 
-                        class="p-2 rounded-lg bg-white/50 border border-gray-300 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        class="px-4 py-2.5 rounded-xl input-field text-sm min-w-[140px]"
                         onchange="filterHistory()"
                     >
                         <option value="all">全部</option>
@@ -342,8 +806,8 @@
                         <option value="month">最近一月</option>
                     </select>
                 </div>
-                <div class="text-gray-600 text-xs">
-                    共 <span id="historyCount">0</span> 条记录
+                <div class="text-stone-500 text-xs">
+                    共 <span id="historyCount" class="text-amber-500 font-medium">0</span> 条记录
                 </div>
             </div>
             
@@ -351,23 +815,27 @@
                 <!-- 历史记录将在这里动态加载 -->
             </div>
             
-            <div id="historyEmpty" class="text-center py-12 text-gray-500 hidden">
-                <div class="text-6xl mb-4">📝</div>
-                <p>还没有生成历史记录</p>
-                <p class="text-sm mt-2">开始生成你的第一个UI设计吧！</p>
+            <div id="historyEmpty" class="text-center py-16 hidden">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-stone-800/50 flex items-center justify-center border border-stone-700/50">
+                    <svg class="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <p class="text-stone-300 font-medium mb-1">暂无历史记录</p>
+                <p class="text-stone-500 text-sm">开始生成你的第一个UI设计吧</p>
             </div>
             
-            <div id="historyNoResults" class="text-center py-12 text-gray-500 hidden">
-                <div class="text-6xl mb-4">🔍</div>
-                <p>没有找到匹配的历史记录</p>
-                <p class="text-sm mt-2">尝试调整搜索条件</p>
+            <div id="historyNoResults" class="text-center py-16 hidden">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-stone-800/50 flex items-center justify-center border border-stone-700/50">
+                    <svg class="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <p class="text-stone-300 font-medium mb-1">没有找到匹配的记录</p>
+                <p class="text-stone-500 text-sm">尝试调整搜索条件</p>
             </div>
             
-            <div class="mt-4 flex gap-3">
-                <button onclick="clearAllHistory()" class="flex-1 glass-dark text-gray-800 font-bold py-3 rounded-xl hover:bg-white/30 transition">
-                    🗑️ 清空全部
+            <div class="mt-6 flex gap-3">
+                <button onclick="clearAllHistory()" class="flex-1 btn-secondary py-3 rounded-xl font-semibold text-red-400 hover:text-red-300 hover:border-red-500/50">
+                    清空全部
                 </button>
-                <button onclick="closeHistory()" class="flex-1 glass-dark text-gray-800 font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                <button onclick="closeHistory()" class="flex-1 btn-secondary py-3 rounded-xl font-semibold">
                     关闭
                 </button>
             </div>
@@ -375,9 +843,12 @@
     </div>
 
     <!-- Image Preview Modal -->
-    <div id="imageModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeImageModal()">
-        <div class="max-w-4xl max-h-[90vh] overflow-auto">
-            <img id="modalImage" src="" class="w-full rounded-2xl">
+    <div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 modal-backdrop" onclick="closeImageModal()">
+        <div class="max-w-5xl max-h-[90vh] overflow-auto relative">
+            <button class="absolute top-4 right-4 w-10 h-10 rounded-xl bg-stone-800/80 hover:bg-stone-700 flex items-center justify-center text-stone-400 hover:text-stone-200 transition z-10" onclick="event.stopPropagation(); closeImageModal();">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <img id="modalImage" src="" class="w-full rounded-xl shadow-2xl">
         </div>
     </div>
 
@@ -709,25 +1180,26 @@
             // 生成模型选择项
             sortedModels.forEach(model => {
             const label = document.createElement('label');
-            label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
+            label.className = 'flex items-center bg-stone-800/30 hover:bg-stone-800/60 p-3 rounded-xl cursor-pointer transition border border-stone-700/50 hover:border-stone-600/50 group';
                 
                 // 检查是否已选中
                 const isChecked = defaultSelected.includes(model.key);
                 
                 const costDisplay = model.cost === 0 
-                    ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
-                    : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
+                    ? '<span class="badge badge-mint text-[10px]">FREE</span>'
+                    : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(2)}</span>`;
                 
                 const typeDisplay = model.type === 'code' 
-                    ? '<span class="text-blue-600 text-xs ml-2">💻 代码</span>'
+                    ? '<span class="text-blue-400 text-xs">代码</span>'
                     : model.type === 'image'
-                    ? '<span class="text-purple-600 text-xs ml-2">🖼️ 图片</span>'
-                    : '<span class="text-gray-600 text-xs ml-2">📝 描述</span>';
+                    ? '<span class="text-purple-400 text-xs">图片</span>'
+                    : '<span class="text-amber-400 text-xs">描述</span>';
                 
             label.innerHTML = `
                     <input type="checkbox" id="settings-model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
-                <span class="text-gray-800 font-medium flex-1">${model.name}</span>
+                <span class="text-stone-200 font-medium flex-1 text-sm group-hover:text-stone-100 transition">${model.name}</span>
                     ${typeDisplay}
+                    <span class="mx-2 text-stone-700">·</span>
                     ${costDisplay}
                 `;
                 
@@ -769,7 +1241,7 @@
                 : defaultMainPageModels.filter(key => MODEL_CONFIGS[key]); // 用户未修改，显示推荐的6个模型
             
             if (availableModels.length === 0) {
-                container.innerHTML = '<div class="text-gray-500 text-sm p-3">请在设置中选择至少一个模型</div>';
+                container.innerHTML = '<div class="text-stone-500 text-sm p-3">请在设置中选择至少一个模型</div>';
                 return;
             }
             
@@ -811,26 +1283,26 @@
             // 生成模型选择项（只显示可用模型）
             sortedModels.forEach(model => {
             const label = document.createElement('label');
-            label.className = 'flex items-center glass-dark p-3 rounded-lg cursor-pointer hover:bg-white/20 transition';
+            label.className = 'flex items-center bg-stone-800/30 hover:bg-stone-800/60 p-2.5 rounded-lg cursor-pointer transition border border-stone-700/30 hover:border-stone-600/50 group';
                 
                 // 默认勾选（全部勾选或使用上次选择）
                 const isChecked = defaultChecked.includes(model.key);
                 
                 const costDisplay = model.cost === 0 
-                    ? '<span class="text-green-600 text-xs font-bold">免费 🎉</span>'
-                    : `<span class="text-gray-600 text-xs">$${model.cost.toFixed(2)}</span>`;
+                    ? '<span class="text-emerald-400 text-[10px] font-semibold uppercase tracking-wider">Free</span>'
+                    : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(2)}</span>`;
                 
-                const typeDisplay = model.type === 'code' 
-                    ? '<span class="text-blue-600 text-xs ml-2">💻</span>'
+                const typeIcon = model.type === 'code' 
+                    ? '<svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>'
                     : model.type === 'image'
-                    ? '<span class="text-purple-600 text-xs ml-2">🖼️</span>'
-                    : '<span class="text-gray-600 text-xs ml-2">📝</span>';
+                    ? '<svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+                    : '<svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
                 
             label.innerHTML = `
-                    <input type="checkbox" id="model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
-                <span class="text-gray-800 font-medium flex-1">${model.name}</span>
-                    ${typeDisplay}
-                    ${costDisplay}
+                    <input type="checkbox" id="model-${model.key}" class="mr-2.5" ${isChecked ? 'checked' : ''}>
+                <span class="text-stone-300 font-medium flex-1 text-sm group-hover:text-stone-100 transition truncate">${model.name}</span>
+                    ${typeIcon}
+                    <span class="ml-2">${costDisplay}</span>
             `;
             
             // 添加事件监听
@@ -958,13 +1430,13 @@
             if (count > 500) {
                 input.value = input.value.substring(0, 500);
                 charCountElement.textContent = 500;
-                parentElement.className = 'absolute bottom-5 right-3 text-red-500 text-xs font-semibold';
+                parentElement.className = 'absolute bottom-3 right-3 text-red-400 text-xs font-mono font-semibold';
             } else {
                 charCountElement.textContent = count;
                 if (count > 450) {
-                    parentElement.className = 'absolute bottom-5 right-3 text-orange-500 text-xs';
+                    parentElement.className = 'absolute bottom-3 right-3 text-amber-400 text-xs font-mono';
                 } else {
-                    parentElement.className = 'absolute bottom-5 right-3 text-gray-500 text-xs';
+                    parentElement.className = 'absolute bottom-3 right-3 text-stone-600 text-xs font-mono';
                 }
             }
         }
@@ -2409,25 +2881,26 @@ ${code}
             const config = MODEL_CONFIGS[modelKey];
             const card = document.createElement('div');
             card.id = `result-card-${modelKey}`;
-            card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
+            card.className = 'image-card card-glow rounded-xl overflow-hidden card-animate';
             
             // 生成中的占位符
             const placeholderDiv = document.createElement('div');
-            placeholderDiv.className = 'aspect-square bg-gray-50 flex items-center justify-center p-6';
+            placeholderDiv.className = 'bg-stone-900/50 flex items-center justify-center p-6';
+            placeholderDiv.style.height = '400px';
             placeholderDiv.innerHTML = `
                 <div class="text-center">
                     <div class="spinner mx-auto mb-4"></div>
-                    <div class="text-gray-700 text-sm font-medium mb-1">${config.name}</div>
-                    <div class="text-gray-500 text-xs">生成中...</div>
+                    <div class="text-stone-300 text-sm font-medium mb-1">${config.name}</div>
+                    <div class="text-stone-500 text-xs">生成中...</div>
                 </div>
             `;
             
             const infoDiv = document.createElement('div');
-            infoDiv.className = 'p-4';
+            infoDiv.className = 'p-4 bg-stone-800/50 border-t border-stone-700/30';
             infoDiv.innerHTML = `
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-800 font-semibold">${config.name}</span>
-                    <span class="text-gray-600 text-sm">$${config.cost.toFixed(2)}</span>
+                    <span class="text-stone-200 font-semibold text-sm">${config.name}</span>
+                    <span class="text-stone-500 text-xs font-mono">$${config.cost.toFixed(2)}</span>
                 </div>
             `;
             
@@ -2454,25 +2927,28 @@ ${code}
             if (isError) {
                 // 错误状态 - 统一尺寸
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'bg-red-50 flex items-center justify-center p-6';
-                errorDiv.style.height = '500px'; // 与其他卡片内容区域高度一致
+                errorDiv.className = 'bg-red-500/5 flex items-center justify-center p-6';
+                errorDiv.style.height = '400px';
                 errorDiv.innerHTML = `
                     <div class="text-center">
-                        <div class="text-4xl mb-2">❌</div>
-                        <div class="text-red-600 text-sm font-medium mb-2">生成失败</div>
-                        <div class="text-gray-600 text-xs max-h-20 overflow-y-auto">${errorMsg || '未知错误'}</div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-red-500/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="text-red-400 text-sm font-medium mb-2">生成失败</div>
+                        <div class="text-stone-500 text-xs max-h-20 overflow-y-auto px-4">${errorMsg || '未知错误'}</div>
                     </div>
                 `;
                 
                 const infoDiv = document.createElement('div');
-                infoDiv.className = 'p-4';
+                infoDiv.className = 'p-4 bg-stone-800/50 border-t border-stone-700/30';
                 infoDiv.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-gray-800 font-semibold">${config.name}</span>
-                        <span class="text-gray-600 text-sm">$${displayCost.toFixed(4)}</span>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-stone-200 font-semibold text-sm">${config.name}</span>
+                        <span class="text-stone-500 text-xs font-mono">$${displayCost.toFixed(4)}</span>
                     </div>
-                    <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
-                        🔄 重试
+                    <button class="w-full bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        重试
                     </button>
                 `;
                 infoDiv.querySelector('button').onclick = () => retryModel(config.name);
@@ -2482,42 +2958,44 @@ ${code}
             } else if (codeContent) {
                 // 代码内容 - 统一尺寸，只显示首屏
                 const codeContainer = document.createElement('div');
-                codeContainer.className = 'bg-gray-50 flex flex-col overflow-hidden';
-                codeContainer.style.height = '600px'; // 统一高度
+                codeContainer.className = 'bg-stone-900/30 flex flex-col overflow-hidden';
+                codeContainer.style.height = '500px';
                 
                 const previewArea = document.createElement('div');
-                previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-hidden';
+                previewArea.className = 'flex-1 relative cursor-pointer hover:opacity-95 transition overflow-hidden';
                 previewArea.style.minHeight = '0';
                 previewArea.style.display = 'flex';
                 previewArea.style.alignItems = 'center';
                 previewArea.style.justifyContent = 'center';
+                previewArea.style.background = 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)';
                 previewArea.title = '点击查看大图';
                 
                 const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'absolute inset-0 flex items-center justify-center bg-gray-100';
+                loadingDiv.className = 'absolute inset-0 flex items-center justify-center bg-stone-900';
                 loadingDiv.innerHTML = '<div class="spinner"></div>';
                 previewArea.appendChild(loadingDiv);
                 
                 const iframe = document.createElement('iframe');
-                iframe.className = 'border-0';
+                iframe.className = 'border-0 rounded-lg shadow-2xl';
                 iframe.style.opacity = '0';
                 iframe.style.transition = 'opacity 0.3s';
-                iframe.style.pointerEvents = 'none'; // 禁用iframe内的交互，防止滚动
+                iframe.style.pointerEvents = 'none';
                 iframe.setAttribute('scrolling', 'no');
                 
-                // 根据平台设置iframe尺寸（移动端统一宽度，居中显示）
                 const platformRadio = document.querySelector('input[name="platform"]:checked');
                 const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
                 
                 if (currentPlatform === 'mobile') {
-                    iframe.style.width = '375px';
-                    iframe.style.height = '500px'; // 首屏高度，减去信息区域
+                    iframe.style.width = '280px';
+                    iframe.style.height = '380px';
                     iframe.width = '375';
                     iframe.height = '500';
+                    iframe.style.transform = 'scale(0.75)';
+                    iframe.style.transformOrigin = 'center center';
                 } else {
                     iframe.style.width = '100%';
                     iframe.style.height = '100%';
-                    iframe.style.maxWidth = '800px'; // 桌面端限制最大宽度
+                    iframe.style.maxWidth = '800px';
                 }
                 
                 iframe.srcdoc = codeContent;
@@ -2529,7 +3007,6 @@ ${code}
                             previewArea.removeChild(loadingDiv);
                         }
                         
-                        // 禁用iframe内的滚动
                         try {
                             const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                             if (iframeDoc && iframeDoc.body) {
@@ -2548,7 +3025,7 @@ ${code}
                 
                 iframe.onerror = () => {
                     if (previewArea.contains(loadingDiv)) {
-                        loadingDiv.innerHTML = '<div class="text-gray-500 text-sm">加载失败，请点击查看代码</div>';
+                        loadingDiv.innerHTML = '<div class="text-stone-500 text-sm">加载失败</div>';
                     }
                 };
                 
@@ -2563,18 +3040,20 @@ ${code}
                 codeContainer.appendChild(previewArea);
                 
                 const infoDiv = document.createElement('div');
-                infoDiv.className = 'p-3 bg-white flex-shrink-0';
+                infoDiv.className = 'p-3 bg-stone-800/50 flex-shrink-0 border-t border-stone-700/30';
                 infoDiv.innerHTML = `
                     <div class="flex justify-between items-center mb-2">
-                        <span class="text-gray-800 font-semibold">${config.name}</span>
-                        <span class="text-gray-600 text-sm">$${displayCost.toFixed(4)}</span>
+                        <span class="text-stone-200 font-semibold text-sm">${config.name}</span>
+                        <span class="text-stone-500 text-xs font-mono">$${displayCost.toFixed(4)}</span>
                     </div>
                     <div class="flex gap-2">
-                        <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                            👁️ 查看代码
+                        <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                            代码
                         </button>
-                        <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                            ⬇️ 下载图片
+                        <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            下载
                         </button>
                     </div>
                 `;
@@ -2625,26 +3104,24 @@ ${code}
                 const isHttpUrl = imageUrl.startsWith('http');
                 
                 if (isBase64 || isHttpUrl) {
-                    // 统一尺寸：与代码预览卡片高度一致（600px总高度 - 信息区域高度）
                     const imgContainer = document.createElement('div');
-                    imgContainer.className = 'bg-gray-100 relative';
-                    imgContainer.style.height = '500px'; // 与代码预览区域高度一致
+                    imgContainer.className = 'relative';
+                    imgContainer.style.height = '400px';
                     imgContainer.style.width = '100%';
                     imgContainer.style.display = 'flex';
                     imgContainer.style.alignItems = 'center';
                     imgContainer.style.justifyContent = 'center';
+                    imgContainer.style.background = 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)';
                     
-                    // 获取当前平台，移动端添加padding保持手机屏幕比例
                     const platformRadio = document.querySelector('input[name="platform"]:checked');
                     const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
                     
                     if (currentPlatform === 'mobile') {
-                        // 移动端：顶部和两边留出空间，保持手机屏幕首屏比例
-                        imgContainer.style.padding = '16px 12px';
+                        imgContainer.style.padding = '20px 16px';
                     }
                     
                     const img = document.createElement('img');
-                    img.className = 'object-contain'; // 使用contain保持完整显示和原始比例
+                    img.className = 'object-contain rounded-lg shadow-2xl';
                     img.style.maxWidth = '100%';
                     img.style.maxHeight = '100%';
                     img.style.width = 'auto';
@@ -2659,8 +3136,10 @@ ${code}
                         console.error('❌ 图片加载失败:', config.name);
                         imgContainer.innerHTML = `
                             <div class="w-full h-full flex flex-col items-center justify-center p-4">
-                                <div class="text-4xl mb-2">⚠️</div>
-                                <div class="text-gray-600 text-xs text-center mb-2">图片加载失败</div>
+                                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                </div>
+                                <div class="text-stone-500 text-xs text-center">图片加载失败</div>
                             </div>
                         `;
                     };
@@ -2669,15 +3148,16 @@ ${code}
                     imgContainer.appendChild(img);
                     
                     const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-4';
+                    infoDiv.className = 'p-4 bg-stone-800/50 border-t border-stone-700/30';
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-800 font-semibold">${config.name}</span>
-                            <span class="text-gray-600 text-sm">$${displayCost.toFixed(4)}</span>
+                            <span class="text-stone-200 font-semibold text-sm">${config.name}</span>
+                            <span class="text-stone-500 text-xs font-mono">$${displayCost.toFixed(4)}</span>
                         </div>
                         <div class="flex gap-2">
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载图片
+                            <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                下载图片
                             </button>
                         </div>
                     `;
@@ -2700,30 +3180,33 @@ ${code}
             currentResults.push({ modelName, imageUrl, cost, isError, errorMsg, codeContent });
             
             const card = document.createElement('div');
-            card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
+            card.className = 'image-card card-glow rounded-xl overflow-hidden card-animate';
             
             if (isError) {
                 // 错误卡片 - 统一尺寸
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'bg-red-50 flex items-center justify-center p-6';
-                errorDiv.style.height = '500px'; // 与其他卡片内容区域高度一致
+                errorDiv.className = 'bg-red-500/5 flex items-center justify-center p-6';
+                errorDiv.style.height = '400px';
                 errorDiv.innerHTML = `
                     <div class="text-center">
-                        <div class="text-4xl mb-2">❌</div>
-                        <div class="text-red-600 text-sm font-medium mb-2">生成失败</div>
-                        <div class="text-gray-600 text-xs">${errorMsg}</div>
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-red-500/10 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="text-red-400 text-sm font-medium mb-2">生成失败</div>
+                        <div class="text-stone-500 text-xs px-4">${errorMsg}</div>
                     </div>
                 `;
                 
                 const infoDiv = document.createElement('div');
-                infoDiv.className = 'p-4';
+                infoDiv.className = 'p-4 bg-stone-800/50 border-t border-stone-700/30';
                 infoDiv.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-gray-800 font-semibold">${modelName}</span>
-                        <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
+                        <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
                     </div>
-                    <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
-                        🔄 重试
+                    <button class="w-full bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        重试
                     </button>
                 `;
                 infoDiv.querySelector('button').onclick = () => retryModel(modelName);
@@ -2747,50 +3230,51 @@ ${code}
                 if (codeContent) {
                     // 代码预览卡片 - 统一尺寸，只显示首屏
                     const codeContainer = document.createElement('div');
-                    codeContainer.className = 'bg-gray-50 flex flex-col overflow-hidden';
-                    codeContainer.style.height = '600px'; // 统一高度
+                    codeContainer.className = 'bg-stone-900/30 flex flex-col overflow-hidden';
+                    codeContainer.style.height = '500px';
                     
-                    // 代码预览区域（主要部分，占据更多空间）
+                    // 代码预览区域
                     const previewArea = document.createElement('div');
-                    previewArea.className = 'flex-1 relative border-b border-gray-200 cursor-pointer hover:opacity-90 transition overflow-hidden';
-                    previewArea.style.minHeight = '0'; // 让flex-1正常工作
+                    previewArea.className = 'flex-1 relative cursor-pointer hover:opacity-95 transition overflow-hidden';
+                    previewArea.style.minHeight = '0';
                     previewArea.style.display = 'flex';
                     previewArea.style.alignItems = 'center';
                     previewArea.style.justifyContent = 'center';
+                    previewArea.style.background = 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)';
                     previewArea.title = '点击查看大图';
                     
                     // 添加加载指示器
                     const loadingDiv = document.createElement('div');
-                    loadingDiv.className = 'absolute inset-0 flex items-center justify-center bg-gray-100';
+                    loadingDiv.className = 'absolute inset-0 flex items-center justify-center bg-stone-900';
                     loadingDiv.innerHTML = '<div class="spinner"></div>';
                     previewArea.appendChild(loadingDiv);
                     
                     // 使用 iframe 预览代码
                     const iframe = document.createElement('iframe');
-                    iframe.className = 'border-0';
+                    iframe.className = 'border-0 rounded-lg shadow-2xl';
                     iframe.style.opacity = '0';
                     iframe.style.transition = 'opacity 0.3s';
-                    iframe.style.pointerEvents = 'none'; // 禁用iframe内的交互，防止滚动
+                    iframe.style.pointerEvents = 'none';
                     iframe.setAttribute('scrolling', 'no');
                     
-                    // 根据平台设置iframe尺寸（移动端统一宽度，居中显示）
                     const platformRadio = document.querySelector('input[name="platform"]:checked');
                     const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
                     
                     if (currentPlatform === 'mobile') {
-                        iframe.style.width = '375px';
-                        iframe.style.height = '500px'; // 首屏高度，减去信息区域
+                        iframe.style.width = '280px';
+                        iframe.style.height = '380px';
                         iframe.width = '375';
                         iframe.height = '500';
+                        iframe.style.transform = 'scale(0.75)';
+                        iframe.style.transformOrigin = 'center center';
                     } else {
                         iframe.style.width = '100%';
                         iframe.style.height = '100%';
-                        iframe.style.maxWidth = '800px'; // 桌面端限制最大宽度
+                        iframe.style.maxWidth = '800px';
                     }
                     
                     iframe.srcdoc = codeContent;
                     
-                    // iframe加载完成后显示
                     iframe.onload = () => {
                         setTimeout(() => {
                             iframe.style.opacity = '1';
@@ -2798,7 +3282,6 @@ ${code}
                                 previewArea.removeChild(loadingDiv);
                             }
                             
-                            // 禁用iframe内的滚动
                             try {
                                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                                 if (iframeDoc && iframeDoc.body) {
@@ -2815,20 +3298,16 @@ ${code}
                         }, 500);
                     };
                     
-                    // 如果加载失败，也移除加载指示器
                     iframe.onerror = () => {
                         if (previewArea.contains(loadingDiv)) {
-                            loadingDiv.innerHTML = '<div class="text-gray-500 text-sm">加载失败，请点击查看代码</div>';
+                            loadingDiv.innerHTML = '<div class="text-stone-500 text-sm">加载失败</div>';
                         }
                     };
                     
                     previewArea.appendChild(iframe);
-                    
-                    // 点击预览区域可以查看大图
                     previewArea.style.cursor = 'pointer';
                     previewArea.onclick = (e) => {
                         e.stopPropagation();
-                        // 获取当前平台信息
                         const platformRadio = document.querySelector('input[name="platform"]:checked');
                         const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
                         showCodePreview(codeContent, modelName, currentPlatform);
@@ -2837,20 +3316,22 @@ ${code}
                     
                     codeContainer.appendChild(previewArea);
                     
-                    // 信息区域（缩小）
+                    // 信息区域
                     const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-3 bg-white flex-shrink-0';
+                    infoDiv.className = 'p-3 bg-stone-800/50 flex-shrink-0 border-t border-stone-700/30';
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-800 font-semibold">${modelName}</span>
-                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                            <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
+                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
                         </div>
                         <div class="flex gap-2">
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                👁️ 查看代码
+                            <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                代码
                             </button>
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载图片
+                            <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                下载
                             </button>
                         </div>
                     `;
@@ -2902,68 +3383,61 @@ ${code}
                 }
                 
                 if (isBase64 || isHttpUrl) {
-                    // 使用JavaScript创建图片元素，避免HTML字符串问题
-                    // 统一尺寸：与代码预览卡片高度一致（600px总高度 - 信息区域高度）
                     const imgContainer = document.createElement('div');
-                    imgContainer.className = 'bg-gray-100 relative';
-                    imgContainer.style.height = '500px'; // 与代码预览区域高度一致
+                    imgContainer.className = 'relative';
+                    imgContainer.style.height = '400px';
                     imgContainer.style.width = '100%';
                     imgContainer.style.display = 'flex';
                     imgContainer.style.alignItems = 'center';
                     imgContainer.style.justifyContent = 'center';
+                    imgContainer.style.background = 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)';
                     
-                    // 获取当前平台，移动端添加padding保持手机屏幕比例
                     const platformRadio = document.querySelector('input[name="platform"]:checked');
                     const currentPlatform = platformRadio ? platformRadio.value : 'mobile';
                     
                     if (currentPlatform === 'mobile') {
-                        // 移动端：顶部和两边留出空间，保持手机屏幕首屏比例
-                        imgContainer.style.padding = '16px 12px';
+                        imgContainer.style.padding = '20px 16px';
                     }
                     
                     const img = document.createElement('img');
-                    img.className = 'object-contain'; // 使用contain保持完整显示和原始比例
+                    img.className = 'object-contain rounded-lg shadow-2xl';
                     img.style.maxWidth = '100%';
                     img.style.maxHeight = '100%';
                     img.style.width = 'auto';
                     img.style.height = 'auto';
                     img.alt = modelName;
                     
-                    // 图片加载成功
                     img.onload = function() {
                         console.log('✅ 图片加载成功:', modelName);
                     };
                     
-                    // 图片加载失败
                     img.onerror = function() {
                         console.error('❌ 图片加载失败:', modelName);
                         imgContainer.innerHTML = `
                             <div class="w-full h-full flex flex-col items-center justify-center p-4">
-                                <div class="text-4xl mb-2">⚠️</div>
-                                <div class="text-gray-600 text-xs text-center mb-2">图片加载失败</div>
-                                <div class="text-gray-500 text-xs text-center mb-2">数据长度: ${imageUrl.length}</div>
-                                <button class="text-xs text-blue-600 underline" onclick="copyToClipboard('${modelName}')">
-                                    复制base64
-                                </button>
+                                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                </div>
+                                <div class="text-stone-400 text-xs text-center mb-2">图片加载失败</div>
+                                <div class="text-stone-600 text-xs text-center">数据长度: ${imageUrl.length}</div>
                             </div>
                         `;
                     };
                     
-                    // 设置src - 关键！
                     img.src = imageUrl;
-                    
                     imgContainer.appendChild(img);
                     
                     const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-4';
+                    infoDiv.className = 'p-4 bg-stone-800/50 border-t border-stone-700/30';
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-800 font-semibold">${modelName}</span>
-                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                            <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
+                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
                         </div>
                         <div class="flex gap-2">
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载图片
+                            <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                下载图片
                             </button>
                         </div>
                     `;
@@ -2984,27 +3458,31 @@ ${code}
                     // 不是图片格式
                     console.warn('⚠️ 返回的不是图片格式');
                     const dataDiv = document.createElement('div');
-                    dataDiv.className = 'aspect-square bg-blue-50 flex items-center justify-center p-6 overflow-auto';
+                    dataDiv.className = 'bg-stone-900/50 flex items-center justify-center p-6 overflow-auto';
+                    dataDiv.style.height = '400px';
                     dataDiv.innerHTML = `
                         <div class="text-center w-full">
-                            <div class="text-4xl mb-2">📄</div>
-                            <div class="text-blue-600 text-sm font-medium mb-2">返回了数据</div>
-                            <div class="text-gray-600 text-xs mb-3">但不是图片格式</div>
-                            <div class="bg-white/50 p-2 rounded text-left">
-                                <pre class="text-xs overflow-auto max-h-32">${imageUrl ? imageUrl.substring(0, 200) : '无数据'}</pre>
+                            <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </div>
+                            <div class="text-blue-400 text-sm font-medium mb-2">返回了数据</div>
+                            <div class="text-stone-500 text-xs mb-3">但不是图片格式</div>
+                            <div class="bg-stone-800/50 p-2 rounded-lg text-left border border-stone-700/50">
+                                <pre class="text-xs overflow-auto max-h-32 text-stone-400">${imageUrl ? imageUrl.substring(0, 200) : '无数据'}</pre>
                             </div>
                         </div>
                     `;
                     
                     const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-4';
+                    infoDiv.className = 'p-4 bg-stone-800/50 border-t border-stone-700/30';
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-800 font-semibold">${modelName}</span>
-                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                            <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
+                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
                         </div>
-                        <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
-                            🔍 查看完整数据
+                        <button class="w-full bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            查看完整数据
                         </button>
                     `;
                     infoDiv.querySelector('button').onclick = () => showRawData(modelName);
@@ -3818,7 +4296,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             
             filteredHistory.forEach((item, index) => {
                 const historyCard = document.createElement('div');
-                historyCard.className = 'glass-dark rounded-xl p-4 mb-3';
+                historyCard.className = 'bg-stone-800/30 rounded-xl p-4 mb-3 border border-stone-700/30 hover:border-stone-600/50 transition';
                 
                 const date = new Date(item.timestamp);
                 const dateStr = date.toLocaleString('zh-CN', {
@@ -3840,56 +4318,48 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 historyCard.innerHTML = `
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex-1">
-                            <div class="text-gray-800 font-semibold mb-1">${item.prompt.substring(0, 50)}${item.prompt.length > 50 ? '...' : ''}</div>
-                            <div class="text-gray-600 text-xs space-x-2">
-                                <span>📱 ${item.platformText}</span>
-                                <span>•</span>
-                                <span>🎨 ${modelsList}</span>
-                                <span>•</span>
-                                <span>💰 $${item.totalCost.toFixed(2)}</span>
-                                <span>•</span>
-                                <span>✅ ${successCount} 成功</span>
-                                ${errorCount > 0 ? `<span>• ❌ ${errorCount} 失败</span>` : ''}
+                            <div class="text-stone-200 font-semibold mb-1.5 text-sm">${item.prompt.substring(0, 50)}${item.prompt.length > 50 ? '...' : ''}</div>
+                            <div class="text-stone-500 text-xs flex flex-wrap gap-x-3 gap-y-1">
+                                <span class="flex items-center gap-1">${item.platform === 'mobile' ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>' : '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>'} ${item.platformText}</span>
+                                <span class="text-amber-500 font-mono">$${item.totalCost.toFixed(2)}</span>
+                                <span class="text-emerald-400">${successCount} 成功</span>
+                                ${errorCount > 0 ? `<span class="text-red-400">${errorCount} 失败</span>` : ''}
                             </div>
-                            <div class="text-gray-500 text-xs mt-1">${dateStr}</div>
+                            <div class="text-stone-600 text-xs mt-1.5">${dateStr}</div>
                         </div>
                         <div class="flex gap-2 ml-4">
-                            <button onclick="viewHistoryItem(${item.id})" class="glass text-gray-800 text-xs px-3 py-1 rounded-lg hover:bg-white/30 transition">
-                                👁️ 查看
+                            <button onclick="viewHistoryItem(${item.id})" class="bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs px-3 py-1.5 rounded-lg transition">
+                                查看
                             </button>
-                            <button onclick="regenerateFromHistory(${item.id})" class="glass text-gray-800 text-xs px-3 py-1 rounded-lg hover:bg-white/30 transition">
-                                🔄 重新生成
+                            <button onclick="regenerateFromHistory(${item.id})" class="bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs px-3 py-1.5 rounded-lg transition">
+                                重新生成
                             </button>
-                            <button onclick="deleteHistoryItem(${item.id})" class="glass text-red-600 text-xs px-3 py-1 rounded-lg hover:bg-white/30 transition">
-                                🗑️ 删除
+                            <button onclick="deleteHistoryItem(${item.id})" class="bg-stone-700 hover:bg-red-600/80 text-stone-300 hover:text-red-200 text-xs px-3 py-1.5 rounded-lg transition">
+                                删除
                             </button>
                         </div>
                     </div>
                     <div class="flex gap-2 flex-wrap" id="history-thumbnails-${item.id}">
                         ${item.results.slice(0, 4).map((r, idx) => {
                             if (r.isError) {
-                                return `<div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-xs">❌</div>`;
+                                return `<div class="w-16 h-16 bg-red-500/10 rounded-lg flex items-center justify-center border border-red-500/20"><svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`;
                             } else if (r.thumbnail) {
-                                // 显示真实图片缩略图
-                                return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}" data-full-image="${r.imageUrl ? escapeHtml(r.imageUrl) : ''}">`;
+                                return `<img src="${r.thumbnail}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer border border-stone-700/50 hover:border-stone-500" title="${r.modelName}" data-full-image="${r.imageUrl ? escapeHtml(r.imageUrl) : ''}">`;
                             } else if (r.imageUrl && (r.imageUrl.startsWith('data:image') || r.imageUrl.startsWith('http'))) {
-                                // 如果有完整图片但没有缩略图，直接使用完整图片（缩小显示）
-                                return `<img src="${r.imageUrl}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer" title="${r.modelName}" data-full-image="${escapeHtml(r.imageUrl)}">`;
+                                return `<img src="${r.imageUrl}" alt="${r.modelName}" class="w-16 h-16 object-cover rounded-lg cursor-pointer border border-stone-700/50 hover:border-stone-500" title="${r.modelName}" data-full-image="${escapeHtml(r.imageUrl)}">`;
                             } else if (r.codeContent) {
-                                // 显示代码预览缩略图（使用iframe缩放显示）
                                 const codePreviewId = `code-preview-${item.id}-${idx}`;
-                                return `<div class="w-16 h-16 bg-white rounded-lg border border-gray-300 overflow-hidden relative cursor-pointer code-thumbnail group" data-code="${escapeHtml(JSON.stringify(r.codeContent))}" data-model="${escapeHtml(r.modelName)}" title="${r.modelName}">
+                                return `<div class="w-16 h-16 bg-stone-900 rounded-lg border border-stone-700/50 overflow-hidden relative cursor-pointer code-thumbnail group hover:border-stone-500" data-code="${escapeHtml(JSON.stringify(r.codeContent))}" data-model="${escapeHtml(r.modelName)}" title="${r.modelName}">
                                     <iframe id="${codePreviewId}" srcdoc="${escapeHtml(r.codeContent)}" class="w-full h-full border-0 pointer-events-none" style="transform: scale(0.2); transform-origin: 0 0; width: 500%; height: 500%;"></iframe>
-                                    <div class="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <span class="text-blue-600 text-xs font-medium">💻 代码</span>
+                                    <div class="absolute inset-0 bg-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
                                     </div>
                                 </div>`;
                             } else {
-                                // 没有缩略图时显示占位符
-                                return `<div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs" title="${r.modelName}">📷</div>`;
+                                return `<div class="w-16 h-16 bg-stone-800 rounded-lg flex items-center justify-center border border-stone-700/50" title="${r.modelName}"><svg class="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
                             }
                         }).join('')}
-                        ${item.results.length > 4 ? `<div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-gray-600 text-xs">+${item.results.length - 4}</div>` : ''}
+                        ${item.results.length > 4 ? `<div class="w-16 h-16 bg-stone-800 rounded-lg flex items-center justify-center text-stone-400 text-xs font-medium border border-stone-700/50">+${item.results.length - 4}</div>` : ''}
                     </div>
                 `;
                 
@@ -4207,18 +4677,20 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         function showToast(message, duration = 2000) {
             // 创建 toast 元素
             const toast = document.createElement('div');
-            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity opacity-0';
+            toast.className = 'fixed bottom-6 right-6 bg-stone-800 text-stone-100 px-5 py-3 rounded-xl shadow-xl border border-stone-700/50 z-50 transition-all opacity-0 translate-y-2 text-sm font-medium';
             toast.textContent = message;
             document.body.appendChild(toast);
             
             // 显示动画
             setTimeout(() => {
                 toast.style.opacity = '1';
+                toast.style.transform = 'translateY(0)';
             }, 10);
             
             // 自动移除
             setTimeout(() => {
                 toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
                 setTimeout(() => {
                     if (document.body.contains(toast)) {
                         document.body.removeChild(toast);
@@ -4269,15 +4741,17 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }
             
             const header = document.createElement('div');
-            header.className = 'flex items-center justify-between mb-4 bg-gray-900/50 p-4 rounded-t-lg';
+            header.className = 'flex items-center justify-between mb-4 bg-stone-900/80 p-4 rounded-t-xl border border-stone-700/50 border-b-0';
             header.innerHTML = `
-                <h2 class="text-xl font-bold text-white">🔍 ${modelName} - 预览</h2>
-                <button class="close-preview-btn text-white hover:text-gray-300 text-3xl font-bold">&times;</button>
+                <h2 class="text-lg font-bold text-stone-100">${modelName}</h2>
+                <button class="close-preview-btn w-10 h-10 rounded-xl bg-stone-800 hover:bg-stone-700 flex items-center justify-center text-stone-400 hover:text-stone-200 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             `;
             
             const iframeContainer = document.createElement('div');
-            iframeContainer.className = 'flex-1 bg-white rounded-lg overflow-hidden shadow-2xl';
-            iframeContainer.style.minHeight = '0'; // 让flex-1正常工作
+            iframeContainer.className = 'flex-1 bg-white rounded-xl overflow-hidden shadow-2xl';
+            iframeContainer.style.minHeight = '0';
             
             const iframe = document.createElement('iframe');
             iframe.className = 'w-full h-full border-0';
@@ -4285,15 +4759,17 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             iframeContainer.appendChild(iframe);
             
             const footer = document.createElement('div');
-            footer.className = 'mt-4 flex gap-3 bg-gray-900/50 p-4 rounded-b-lg';
+            footer.className = 'mt-4 flex gap-3 bg-stone-900/80 p-4 rounded-b-xl border border-stone-700/50 border-t-0';
             footer.innerHTML = `
-                <button class="copy-preview-btn flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
-                    📋 复制代码
+                <button class="copy-preview-btn flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    复制代码
                 </button>
-                <button class="download-preview-btn flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
-                    ⬇️ 下载代码
+                <button class="download-preview-btn flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    下载代码
                 </button>
-                <button class="close-preview-btn flex-1 glass-dark text-white font-bold py-3 rounded-xl hover:bg-white/30 transition">
+                <button class="close-preview-btn flex-1 btn-secondary py-3 rounded-xl font-semibold">
                     关闭
                 </button>
             `;
