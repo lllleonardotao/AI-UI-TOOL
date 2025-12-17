@@ -2551,23 +2551,21 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 ? '' 
                 : '\n\n重要：请使用简体中文展示界面中的所有文本（标题、按钮、标签、导航、提示信息等），除非提示词中明确要求使用其他语言。不要输出英文 UI 文本（品牌名和专有名词除外）。';
             
-            // 构建包含参考图片的 prompt
+            // 构建包含参考图片的 prompt（优化版：强调简洁快速）
             let codePrompt = `${prompt}${chineseLanguageHint}
 
-请生成完整的、可直接运行的 ${platformInfo} UI 界面代码。
+请生成**极简**的 ${platformInfo} UI 界面代码，优先速度和核心功能。
 
-要求：
-1. 生成完整的 HTML、CSS 和 JavaScript 代码
-2. 代码应该是一个完整的、可独立运行的 HTML 文件
-3. 使用现代 CSS（Flexbox/Grid）实现布局，代码简洁高效
-4. 确保代码可以直接在浏览器中运行
-5. 如果是移动端，使用响应式设计，适配移动屏幕
-6. 如果是桌面端，使用适合桌面屏幕的布局
-7. 代码要包含所有必要的样式和交互功能
-8. 使用内联样式或 <style> 标签，确保代码可以独立运行
-9. 优先保证代码质量和功能完整性，避免不必要的冗余代码
+核心要求：
+1. 生成完整可运行的 HTML 文件（包含CSS和必要JS）
+2. **极简设计** - 只实现核心功能，避免复杂交互和动画
+3. **最少代码量** - 使用简洁的CSS（Flexbox），避免冗余
+4. 适配${platform === 'mobile' ? '移动端' : '桌面端'}屏幕
+5. 内联样式或 <style> 标签，确保独立运行
 
-请直接输出完整的 HTML 代码，不要包含任何解释文字、markdown 代码块标记（如 \`\`\`html 或 \`\`\`）或任何其他文本，只输出纯 HTML 代码。保持代码简洁，在保证功能的前提下尽量精简。`;
+⚡ 速度优先：代码越简洁越好，快速完成生成。
+
+请直接输出纯 HTML 代码，不要任何解释文字或markdown标记（\`\`\`html等）。`;
 
             // 调试：输出完整的 prompt（如果启用调试模式）
             debugLog('📝 完整代码生成 Prompt:', codePrompt.substring(0, 500) + '...');
@@ -2728,26 +2726,22 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             content: content
                         }
                     ],
-                    // 优化max_tokens：减少生成量以加快响应速度
-                    // 对于特定模型，根据响应速度调整
+                    // 优化max_tokens：大幅减少以加快响应速度（生成极简代码）
                     max_tokens: (() => {
-                        // 增加 max_tokens 以确保生成完整的代码（特别是包含图表、复杂交互的页面）
+                        // 为了解决Vercel 10秒超时问题，大幅减少tokens
+                        // 2000-2500 tokens ≈ 1500-2000字代码，足够生成简单UI
                         if (model.includes(':free')) {
-                            return 6000; // 免费模型：增加到6000 tokens（约4500字代码）
-                        } else if (model.includes('claude-opus')) {
-                            return 8000; // Claude Opus：增加到8000（确保完整代码，即使响应慢也要保证完整性）
-                        } else if (model.includes('claude-sonnet-4.5')) {
-                            return 6000; // Claude Sonnet 4.5：增加到6000 tokens
-                        } else if (model.includes('gpt-4o')) {
-                            return 8000; // GPT-4o：明确设置为8000 tokens（确保完整代码）
-                        } else if (model.includes('gpt-4')) {
-                            return 8000; // GPT-4 系列：8000 tokens（确保完整代码）
+                            return 2000; // 免费模型：2000 tokens
                         } else if (model.includes('deepseek') || model.includes('qwen')) {
-                            return 4000; // DeepSeek/Qwen：4000 tokens
+                            return 2000; // DeepSeek/Qwen：2000 tokens（加快速度）
+                        } else if (model.includes('grok')) {
+                            return 2500; // Grok：2500 tokens
                         } else {
-                            return 8000; // 其他付费模型：8000 tokens（确保完整页面）
+                            return 2500; // 其他模型：2500 tokens
                         }
-                    })()
+                    })(),
+                    // 添加temperature控制 - 更确定性，生成更快
+                    temperature: 0.7
                 };
                 
                 const response = await makeRequestWithRetry(requestBody);
