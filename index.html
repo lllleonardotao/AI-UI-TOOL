@@ -2743,16 +2743,16 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     ],
                     // 优化max_tokens：平衡速度和完整性
                     max_tokens: (() => {
-                        // 平衡点：3000 tokens ≈ 2000-2500字代码
-                        // 既能生成相对完整的UI，又不至于超时
+                        // 优化为2000 tokens - 确保30秒内完成，避免Edge Function超时
+                        // 2000 tokens ≈ 1500-2000字代码，足够生成简洁UI
                         if (model.includes(':free')) {
-                            return 2500; // 免费模型：2500 tokens
+                            return 2000; // 免费模型：2000 tokens
                         } else if (model.includes('deepseek') || model.includes('qwen')) {
-                            return 3000; // DeepSeek/Qwen：3000 tokens
+                            return 2000; // DeepSeek/Qwen：2000 tokens (降低以避免超时)
                         } else if (model.includes('grok')) {
-                            return 3000; // Grok：3000 tokens
+                            return 2000; // Grok：2000 tokens (降低以避免超时)
                         } else {
-                            return 3000; // 其他模型：3000 tokens
+                            return 2500; // Claude等快速模型：2500 tokens
                         }
                     })(),
                     // 添加temperature控制 - 更确定性，生成更快
