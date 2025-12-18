@@ -2758,9 +2758,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 
                 // 检查是否因为 max_tokens 限制导致代码被截断
                 const choice = data.choices[0];
+                let wasTruncated = false;
                 if (choice.finish_reason === 'length') {
                     console.warn('⚠️ 代码生成可能被截断（达到 max_tokens 限制）');
                     debugLog('⚠️ finish_reason: length - 代码可能不完整');
+                    wasTruncated = true;
+                    // 在界面上显示警告
+                    showToast('⚠️ 代码可能不完整（已达生成限制），建议简化需求或升级计划', 5000);
                 }
                 
                 let code = data.choices[0].message.content;
