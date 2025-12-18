@@ -2572,6 +2572,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 3. 适配${platform === 'mobile' ? '移动端' : '桌面端'}屏幕
 4. 内联<style>标签，确保独立运行
 
+🚫 **严禁使用占位符**：
+1. ❌ 禁止使用外部图片URL（如 <img src="http...">）
+2. ❌ 禁止使用空白或占位图片（如 <img src="" alt="placeholder">）
+3. ❌ 禁止使用空div配注释（如 <!-- 图片位置 --> 或 <!-- chart goes here -->）
+4. ✅ 必须使用CSS渐变、纯色背景、几何形状或内联SVG来替代所有图片
+5. ✅ 所有视觉元素（图标、图表、装饰）都必须用CSS或SVG实现，确保100%可见
+6. ✅ 示例：用CSS画圆形头像、用SVG画图表、用渐变做背景图
+
 请直接输出纯 HTML 代码，不要任何解释文字或markdown标记（\`\`\`html等）。`;
 
             // 调试：输出完整的 prompt（如果启用调试模式）
