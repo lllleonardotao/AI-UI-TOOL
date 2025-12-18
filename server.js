@@ -38,7 +38,8 @@ const mimeTypes = {
   '.ico': 'image/x-icon'
 };
 
-const PORT = 3000;
+// 使用环境变量PORT（Zeabur/云平台会设置）或默认3000（本地开发）
+const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
@@ -115,7 +116,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 处理 OPTIONS 预检请求
+  // 处理 OPTIONS 预检请求（/api/openrouter）
   if (pathname === '/api/openrouter' && req.method === 'OPTIONS') {
     res.writeHead(200, {
       'Access-Control-Allow-Origin': '*',
@@ -123,6 +124,37 @@ const server = http.createServer(async (req, res) => {
       'Access-Control-Allow-Headers': 'Content-Type'
     });
     res.end();
+    return;
+  }
+
+  // 处理 /api/stats 请求（统计功能）
+  if (pathname === '/api/stats') {
+    // OPTIONS 预检
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      });
+      res.end();
+      return;
+    }
+
+    // 加载并执行 api/stats.js
+    try {
+      const statsHandler = require('./api/stats.js');
+      await statsHandler(req, res);
+    } catch (error) {
+      console.error('Stats API error:', error);
+      res.writeHead(500, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({
+        error: 'Stats API failed',
+        message: error.message
+      }));
+    }
     return;
   }
 
