@@ -2554,33 +2554,17 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 ? '' 
                 : '\n\n重要：请使用简体中文展示界面中的所有文本（标题、按钮、标签、导航、提示信息等），除非提示词中明确要求使用其他语言。不要输出英文 UI 文本（品牌名和专有名词除外）。';
             
-            // 构建包含参考图片的 prompt（优化版：强调简洁快速+设计指南）
+            // 构建prompt（精简版：减少token消耗，加快生成速度）
             let codePrompt = `${prompt}${chineseLanguageHint}
 
-请生成**极简但有设计感**的 ${platformInfo} UI 界面代码。
+生成${platformInfo} UI界面的完整HTML代码（包含内联CSS）。
 
-🎨 设计原则（必须遵循）：
-1. **选择明确风格** - 选一个方向：极简现代/编辑杂志风/brutalist工业风/柔和自然风
-2. **独特视觉** - 使用区别于通用模板的字体组合、配色方案、布局
-3. **一个记忆点** - 创造一个独特元素（特殊排版/微妙动效/独特间距/色彩对比）
-4. **精致细节** - 注重字体大小、行高、间距、圆角的协调统一
-5. **避免通用** - 不要千篇一律的卡片布局、不要紫色渐变、不要SaaS模板风格
+要求：
+1. 代码简洁 - 适配${platform === 'mobile' ? '移动端' : '桌面端'}，使用Flexbox布局
+2. 禁止占位符 - 所有图标/图表用CSS或内联SVG实现，不用外部图片URL
+3. 直接输出HTML代码，不要markdown标记
 
-⚡ 技术要求：
-1. 完整可运行的 HTML（包含CSS和必要JS）
-2. 代码简洁 - 使用Flexbox，避免冗余
-3. 适配${platform === 'mobile' ? '移动端' : '桌面端'}屏幕
-4. 内联<style>标签，确保独立运行
-
-🚫 **严禁使用占位符**：
-1. ❌ 禁止使用外部图片URL（如 <img src="http...">）
-2. ❌ 禁止使用空白或占位图片（如 <img src="" alt="placeholder">）
-3. ❌ 禁止使用空div配注释（如 <!-- 图片位置 --> 或 <!-- chart goes here -->）
-4. ✅ 必须使用CSS渐变、纯色背景、几何形状或内联SVG来替代所有图片
-5. ✅ 所有视觉元素（图标、图表、装饰）都必须用CSS或SVG实现，确保100%可见
-6. ✅ 示例：用CSS画圆形头像、用SVG画图表、用渐变做背景图
-
-请直接输出纯 HTML 代码，不要任何解释文字或markdown标记（\`\`\`html等）。`;
+示例：用CSS画圆形、SVG画图表、渐变做背景。`;
 
             // 调试：输出完整的 prompt（如果启用调试模式）
             debugLog('📝 完整代码生成 Prompt:', codePrompt.substring(0, 500) + '...');
@@ -2743,16 +2727,16 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     ],
                     // 优化max_tokens：平衡速度和完整性
                     max_tokens: (() => {
-                        // 优化为2000 tokens - 确保30秒内完成，避免Edge Function超时
-                        // 2000 tokens ≈ 1500-2000字代码，足够生成简洁UI
+                        // 激进降低到1500 tokens - 优先保证成功率，避免超时
+                        // 1500 tokens ≈ 1000-1500字代码，配合精简prompt生成极简UI
                         if (model.includes(':free')) {
-                            return 2000; // 免费模型：2000 tokens
+                            return 1500; // 免费模型：1500 tokens
                         } else if (model.includes('deepseek') || model.includes('qwen')) {
-                            return 2000; // DeepSeek/Qwen：2000 tokens (降低以避免超时)
+                            return 1500; // DeepSeek/Qwen：1500 tokens (优先避免超时)
                         } else if (model.includes('grok')) {
-                            return 2000; // Grok：2000 tokens (降低以避免超时)
+                            return 1500; // Grok：1500 tokens (优先避免超时)
                         } else {
-                            return 2500; // Claude等快速模型：2500 tokens
+                            return 2000; // Claude等快速模型：2000 tokens
                         }
                     })(),
                     // 添加temperature控制 - 更确定性，生成更快
