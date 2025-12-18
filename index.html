@@ -1868,11 +1868,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 } else if (config.type === 'code') {
                     // 生成代码的模型
                     const codeResult = await generateCode(config, prompt, platform);
+                    let wasTruncated = false;
                     if (typeof codeResult === 'object' && codeResult.code) {
                         codeContent = codeResult.code;
                         actualCost = codeResult.actualCost !== null ? codeResult.actualCost : actualCost;
+                        wasTruncated = codeResult.wasTruncated || false;
                     } else {
-                        codeContent = codeResult;
+                        codeContent = codeResult.code || codeResult;
+                        wasTruncated = codeResult.wasTruncated || false;
                     }
                 } else {
                     // Claude：生成描述后用免费的Gemini生成图
@@ -1897,8 +1900,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     }
                 }
 
-                // 成功：更新结果卡片（传入实际成本）
-                updateResultCard(modelKey, imageUrl, codeContent, false, '', actualCost);
+                // 成功：更新结果卡片（传入实际成本和截断标志）
+                updateResultCard(modelKey, imageUrl, codeContent, false, '', actualCost, wasTruncated);
                 
                 const result = { 
                     modelName: config.name, 
@@ -2730,18 +2733,18 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                             content: content
                         }
                     ],
-                    // 优化max_tokens：大幅减少以加快响应速度（生成极简代码）
+                    // 优化max_tokens：平衡速度和完整性
                     max_tokens: (() => {
-                        // 为了解决Vercel 10秒超时问题，大幅减少tokens
-                        // 2000-2500 tokens ≈ 1500-2000字代码，足够生成简单UI
+                        // 平衡点：3000 tokens ≈ 2000-2500字代码
+                        // 既能生成相对完整的UI，又不至于超时
                         if (model.includes(':free')) {
-                            return 2000; // 免费模型：2000 tokens
+                            return 2500; // 免费模型：2500 tokens
                         } else if (model.includes('deepseek') || model.includes('qwen')) {
-                            return 2000; // DeepSeek/Qwen：2000 tokens（加快速度）
+                            return 3000; // DeepSeek/Qwen：3000 tokens
                         } else if (model.includes('grok')) {
-                            return 2500; // Grok：2500 tokens
+                            return 3000; // Grok：3000 tokens
                         } else {
-                            return 2500; // 其他模型：2500 tokens
+                            return 3000; // 其他模型：3000 tokens
                         }
                     })(),
                     // 添加temperature控制 - 更确定性，生成更快
@@ -2850,13 +2853,13 @@ ${code}
                 
                 // 从 API 响应中提取实际成本（OpenRouter 返回在 usage 中）
                 const actualCost = data.usage?.total_cost || data.usage?.cost || null;
-                if (actualCost !== null) {
-                    console.log(`💰 [${model}] 实际成本: $${actualCost.toFixed(4)}`);
+                if (actualCost !== null || wasTruncated) {
+                    console.log(`💰 [${model}] 实际成本: $${actualCost ? actualCost.toFixed(4) : '未知'}`);
                     debugLog('💰 实际成本:', actualCost);
-                    return { code, actualCost };
+                    return { code, actualCost, wasTruncated };
                 }
-                
-                return code;
+
+                return { code, wasTruncated };
             } catch (error) {
                 clearTimeout(timeoutId);
                 if (error.name === 'AbortError') {
@@ -2912,7 +2915,7 @@ ${code}
         }
 
         // 更新结果卡片状态
-        function updateResultCard(modelKey, imageUrl = null, codeContent = null, isError = false, errorMsg = '', actualCost = null) {
+        function updateResultCard(modelKey, imageUrl = null, codeContent = null, isError = false, errorMsg = '', actualCost = null, wasTruncated = false) {
             const card = document.getElementById(`result-card-${modelKey}`);
             if (!card) {
                 console.warn(`Card not found for model: ${modelKey}`);
@@ -3048,6 +3051,12 @@ ${code}
                         <span class="text-stone-200 font-semibold text-sm">${config.name}</span>
                         <span class="text-stone-500 text-xs font-mono">$${displayCost.toFixed(4)}</span>
                     </div>
+                    ${wasTruncated ? `
+                    <div class="mb-2 px-2 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <span class="text-amber-400 text-xs">代码可能不完整</span>
+                    </div>
+                    ` : ''}
                     <div class="flex gap-2">
                         <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
