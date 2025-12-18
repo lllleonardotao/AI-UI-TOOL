@@ -1855,7 +1855,8 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 let imageUrl = null;
                 let codeContent = null;
                 let actualCost = config.cost; // 默认使用配置的成本
-                
+                let wasTruncated = false; // 默认未截断
+
                 if (config.type === 'image') {
                     // 直接生成图片的模型（Gemini, Flux, GPT-5）
                     const imageResult = await generateImage(config.model, prompt, platform);
@@ -1868,7 +1869,6 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 } else if (config.type === 'code') {
                     // 生成代码的模型
                     const codeResult = await generateCode(config, prompt, platform);
-                    let wasTruncated = false;
                     if (typeof codeResult === 'object' && codeResult.code) {
                         codeContent = codeResult.code;
                         actualCost = codeResult.actualCost !== null ? codeResult.actualCost : actualCost;
