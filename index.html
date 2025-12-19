@@ -973,14 +973,14 @@
                 model: 'qwen/qwen-2.5-72b-instruct',
                 cost: 0.01,
                 type: 'code',
-                timeout: 110000
+                timeout: 300000 // Zeabur无超时限制，延长到300秒
             },
             'deepseek-v3': {
                 name: 'DeepSeek V3 (代码)',
                 model: 'deepseek/deepseek-chat-v3.1',
                 cost: 0.01,
                 type: 'code',
-                timeout: 130000
+                timeout: 300000 // Zeabur无超时限制，延长到300秒（5分钟）
             },
             'claude-opus': {
                 name: 'Claude Opus 4.5 (代码)',
@@ -994,7 +994,7 @@
                 model: 'x-ai/grok-4.1-fast',
                 cost: 0.01,
                 type: 'code',
-                timeout: 100000
+                timeout: 300000 // Zeabur无超时限制，延长到300秒
             },
             'claude-sonnet-4.5': {
                 name: 'Claude Sonnet 4.5 (代码)',
