@@ -2970,8 +2970,17 @@ ${code}
                         重试
                     </button>
                 `;
-                infoDiv.querySelector('button').onclick = () => retryModel(config.name);
-                
+                const retryButton = infoDiv.querySelector('button');
+                if (retryButton) {
+                    console.log('🔘 绑定重试按钮事件，模型:', config.name, 'modelKey:', modelKey);
+                    retryButton.onclick = () => {
+                        console.log('🖱️ 重试按钮被点击（事件触发）', config.name);
+                        retryModel(config.name);
+                    };
+                } else {
+                    console.error('❌ 未找到重试按钮元素');
+                }
+
                 card.appendChild(errorDiv);
                 card.appendChild(infoDiv);
             } else if (codeContent) {
@@ -3249,8 +3258,17 @@ ${code}
                         重试
                     </button>
                 `;
-                infoDiv.querySelector('button').onclick = () => retryModel(modelName);
-                
+                const retryButton2 = infoDiv.querySelector('button');
+                if (retryButton2) {
+                    console.log('🔘 [addResultCard] 绑定重试按钮事件，模型:', modelName);
+                    retryButton2.onclick = () => {
+                        console.log('🖱️ [addResultCard] 重试按钮被点击', modelName);
+                        retryModel(modelName);
+                    };
+                } else {
+                    console.error('❌ [addResultCard] 未找到重试按钮元素');
+                }
+
                 card.appendChild(errorDiv);
                 card.appendChild(infoDiv);
             } else {
@@ -3571,12 +3589,18 @@ ${code}
         }
 
         function retryModel(modelName) {
+            console.log('🔄 重试按钮被点击，模型名称:', modelName);
+
             // 找到对应的模型key
             const modelKey = Object.keys(MODEL_CONFIGS).find(
                 key => MODEL_CONFIGS[key].name === modelName
             );
 
+            console.log('📍 查找模型key结果:', modelKey);
+
             if (!modelKey) {
+                console.error('❌ 模型未找到，modelName:', modelName);
+                console.log('📋 当前所有模型配置:', Object.keys(MODEL_CONFIGS));
                 alert('模型未找到');
                 return;
             }
