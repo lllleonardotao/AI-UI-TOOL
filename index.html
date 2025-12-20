@@ -3575,12 +3575,12 @@ ${code}
             const modelKey = Object.keys(MODEL_CONFIGS).find(
                 key => MODEL_CONFIGS[key].name === modelName
             );
-            
+
             if (!modelKey) {
                 alert('模型未找到');
                 return;
             }
-            
+
             // 获取当前prompt
             const prompt = document.getElementById('promptInput').value.trim();
             if (!prompt) {
@@ -3591,25 +3591,126 @@ ${code}
             // 获取平台选择
             const platformRadio = document.querySelector('input[name="platform"]:checked');
             const platform = platformRadio ? platformRadio.value : 'mobile';
-            const platformText = platform === 'mobile' ? 'mobile app (iOS/Android)' : 'desktop web application';
-            const platformTitle = platform === 'mobile' ? 'mobile app UI design' : 'desktop web UI design';
+            const platformInfo = platform === 'mobile' ? 'mobile app (iOS/Android)' : 'desktop web application';
 
-            // 重新生成
-            const optimizedPrompt = `Create a clean, modern ${platformTitle}.
+            // 使用与主生成流程相同的完整设计指南
+            // 检测是否有语言要求
+            const hasForeignHint = /英文|english|日文|japanese|韩文|korean|法文|french|德文|german/i.test(prompt);
+            const chineseLanguageHint = hasForeignHint
+                ? ''
+                : '\n\n重要：请使用简体中文展示界面中的所有文本（标题、按钮、标签、导航、提示信息等），除非提示词中明确要求使用其他语言。不要输出英文 UI 文本（品牌名和专有名词除外）。';
 
-User requirements: ${prompt}
+            // 构建完整prompt（与主生成流程保持一致）
+            const codePrompt = `${prompt}${chineseLanguageHint}
 
-Design constraints:
-- Style: flat design, minimalist, professional interface
-- Platform: ${platformText}
-- Layout: clear visual hierarchy, proper spacing
-- Elements: realistic UI components (buttons, inputs, cards)
-- Colors: harmonious color scheme
-- Output: high-fidelity UI mockup, NOT illustration
+生成生产级、有独特设计感的 ${platformInfo} UI 界面代码。
 
-Avoid: 3D elements, realistic photos, cartoon style`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 NON-NEGOTIABLES（不可妥协的要求）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 完整可运行的HTML（包含内联CSS和必要JS）
+2. **严禁占位符**：所有图标/图表/图片必须用CSS或内联SVG实际绘制
+3. 避免通用AI模板 - 必须有明确的设计个性
+4. 直接输出纯HTML代码，不要markdown标记（\`\`\`html等）
+5. 适配${platform === 'mobile' ? '移动端' : '桌面端'}，使用Flexbox或Grid布局
 
-            generateWithModel(modelKey, optimizedPrompt, platform);
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 DESIGN THINKING（设计思考框架）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**明确选择一个设计方向**（必选其一）：
+• 极简主义 - 大量留白、简洁线条、克制的配色
+• 杂志风格 - 大胆排版、强烈对比、衬线字体
+• 工业风格 - 深色基调、棱角分明、技术感
+• 自然柔和 - 圆润形状、温暖色调、舒适间距
+• Brutalism - 粗犷排版、黑白对比、几何形状
+
+**创造一个独特记忆点**：
+• 特殊排版（如：旋转文字、竖排标题、超大字号）
+• 微妙动效（如：悬停平滑变色、渐进式加载）
+• 独特配色（如：深蓝+荧光绿、黑白+亮橙）
+• 精致细节（如：细微阴影、微渐变、精确圆角）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎨 AESTHETICS（美学指南）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【Typography 排版】
+• 字体配对：选择有个性的字体组合（如：衬线标题+无衬线正文）
+• 字阶系统：建立清晰的字号层级（标题48px → 副标题24px → 正文16px）
+• 行高控制：标题1.2、正文1.6-1.8、紧凑卡片1.4
+• 字重变化：用字重（font-weight）而非颜色区分层级
+
+【Color & Theme 配色】
+• 使用CSS变量定义配色：--color-primary、--color-accent、--color-bg
+• 明确主色调基调：冷色系（蓝/绿/紫）或暖色系（橙/红/黄）
+• 限制颜色数量：1个主色 + 1个强调色 + 灰度系统（3-5个灰阶）
+• 背景细节：用微妙渐变或纹理，避免纯白（#fff）/纯黑（#000）
+
+【Motion 动效】
+• 悬停反馈：所有可交互元素必须有悬停状态（颜色/缩放/阴影变化）
+• 过渡时长：快速响应0.2s、常规0.3s、缓慢展开0.5s
+• 缓动函数：使用cubic-bezier实现自然动效（如：cubic-bezier(0.4,0,0.2,1)）
+• 加载状态：用CSS动画实现加载效果（旋转/脉冲/骨架屏）
+
+【Layout 布局】
+• 打破对称：尝试不对称布局（如：左侧2/3内容 + 右侧1/3侧边栏）
+• 负空间运用：重要元素周围留出充足空间（padding/margin至少20px）
+• 网格对齐：即使不对称，也要保持隐形网格对齐（每8px或16px对齐）
+• 视觉焦点：用大小/颜色/位置引导用户视线流动
+
+【Backgrounds 背景】
+• 渐变背景：linear-gradient(135deg, #667eea 0%, #764ba2 100%)
+• 纹理背景：用SVG或CSS pattern创建微妙纹理
+• 卡片层次：用box-shadow或border区分前后关系（不要纯色边框）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📐 TECHNICAL IMPLEMENTATION（技术实现）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【图标实现（必须用实际代码）】
+• 简单图标：用CSS绘制（border-radius圆形、::before/::after伪元素、transform旋转）
+• 复杂图标：内联SVG（<svg><path d="..."/></svg>）
+• 示例：搜索图标 <svg width="20" height="20"><circle cx="8" cy="8" r="7" stroke="currentColor" fill="none"/><line x1="13" y1="13" x2="19" y2="19" stroke="currentColor"/></svg>
+
+【图表实现（严禁占位符）】
+• 柱状图：<svg><rect x="0" y="20" width="30" height="80" fill="#3b82f6"/><rect x="40" y="40" width="30" height="60" fill="#10b981"/>...</svg>
+• 折线图：<svg><polyline points="0,100 50,80 100,60 150,70 200,40" stroke="#3b82f6" fill="none"/></svg>
+• 饼图：<svg><circle cx="50" cy="50" r="40" fill="none" stroke="#3b82f6" stroke-width="80" stroke-dasharray="251 0"/></svg>
+• 进度条：<div style="background:#e5e7eb;border-radius:999px"><div style="width:65%;height:8px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);border-radius:999px"></div></div>
+
+【头像/图片实现】
+• 用户头像：<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:white;font-weight:600">张</div>
+• 产品图片：用几何形状+渐变模拟（<div style="width:100%;height:200px;background:linear-gradient(135deg,#ffeaa7,#fab1a0);border-radius:12px"></div>）
+• Logo占位：用首字母或几何图形（不要灰色矩形）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 ANTI-PATTERNS（绝对避免）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• ❌ 空的<div>占位符（<div style="background:#ddd;height:200px"></div>）
+• ❌ 注释占位（<!-- 这里放图片 -->）
+• ❌ 灰色/空白占位区域（必须用实际SVG或CSS绘制）
+• ❌ 紫色渐变泛滥（除非明确要求）
+• ❌ 通用SaaS模板外观（Tailwind默认样式）
+• ❌ 过度使用圆角（所有元素都是16px圆角）
+• ❌ 纯白背景+纯黑文字（缺乏设计感）
+• ❌ 所有按钮都是蓝色（缺乏层级区分）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ CHECKLIST（交付前检查）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+□ 所有图标/图表都有实际SVG或CSS实现（无占位符）
+□ 选择了明确的设计风格（极简/杂志/工业/自然）
+□ 至少有一个独特记忆点（排版/配色/动效/细节）
+□ 字体大小有清晰层级（至少3个字号）
+□ 配色方案明确（主色+强调色+灰度）
+□ 所有交互元素有悬停状态
+□ 布局有意识运用负空间（不拥挤）
+□ 代码完整可运行（复制粘贴即可使用）
+
+请直接输出HTML代码，确保每个视觉元素都是实际渲染的内容（无任何占位符）。`;
+
+            console.log('🔄 重试生成:', modelName);
+            generateWithModel(modelKey, codePrompt, platform);
         }
 
         function showImageModal(imageUrl) {
