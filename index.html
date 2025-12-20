@@ -1185,9 +1185,9 @@
                 // 检查是否已选中
                 const isChecked = defaultSelected.includes(model.key);
                 
-                const costDisplay = model.cost === 0 
+                const costDisplay = model.cost === 0
                     ? '<span class="badge badge-mint text-[10px]">FREE</span>'
-                    : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(2)}</span>`;
+                    : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(3)}</span>`;
                 
                 const typeDisplay = model.type === 'code' 
                     ? '<span class="text-blue-400 text-xs">代码</span>'
@@ -1288,9 +1288,9 @@
                 // 默认勾选（全部勾选或使用上次选择）
                 const isChecked = defaultChecked.includes(model.key);
                 
-                const costDisplay = model.cost === 0 
+                const costDisplay = model.cost === 0
                     ? '<span class="text-emerald-400 text-[10px] font-semibold uppercase tracking-wider">Free</span>'
-                    : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(2)}</span>`;
+                    : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(3)}</span>`;
                 
                 const typeIcon = model.type === 'code' 
                     ? '<svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>'
@@ -1541,7 +1541,7 @@
                     total += MODEL_CONFIGS[key].cost;
                 }
             }
-            document.getElementById('costEstimate').textContent = `$${total.toFixed(2)}`;
+            document.getElementById('costEstimate').textContent = `$${total.toFixed(3)}`;
         }
 
         // 监听模型选择变化
@@ -1881,20 +1881,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     let totalCost = 0;
                     if (costSummary.length > 0) {
                         costSummary.forEach(item => {
-                            // 单模型成本：两位小数显示，最低0.01但只用于展示
-                            const displayCostPerModel = item.actualCost === 0
-                                ? 0
-                                : Math.max(0.01, parseFloat(item.actualCost.toFixed(2)));
-                            console.log(`  ${item.modelName}: $${displayCostPerModel.toFixed(2)}`);
+                            // 单模型成本：三位小数显示，准确显示实际成本（包括0）
+                            const displayCostPerModel = item.actualCost || 0;
+                            console.log(`  ${item.modelName}: $${displayCostPerModel.toFixed(3)}`);
                             totalCost += item.actualCost || 0;
                         });
-                        
-                        // 总成本计算：基于实际总和，再按规则显示
-                        const rawTotal = totalCost || 0;
-                        const displayTotal = rawTotal === 0
-                            ? 0
-                            : Math.max(0.01, parseFloat(rawTotal.toFixed(2)));
-                        console.log(`\n  总计: $${displayTotal.toFixed(2)}`);
+
+                        // 总成本计算：三位小数显示，准确显示实际总成本（包括0）
+                        const displayTotal = totalCost || 0;
+                        console.log(`\n  总计: $${displayTotal.toFixed(3)}`);
                         console.log('==========================================\n');
 
                         // 更新界面上的总成本显示
@@ -1902,7 +1897,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                         const totalCostValueEl = document.getElementById('totalCostValue');
                         if (totalCostDisplayEl && totalCostValueEl) {
                             totalCostDisplayEl.classList.remove('hidden');
-                            totalCostValueEl.textContent = `$${displayTotal.toFixed(2)}`;
+                            totalCostValueEl.textContent = `$${displayTotal.toFixed(3)}`;
                         }
                     } else {
                         console.log('  （没有获取到实际成本数据）');
@@ -3010,7 +3005,7 @@ ${code}
             infoDiv.innerHTML = `
                 <div class="flex justify-between items-center">
                     <span class="text-stone-200 font-semibold text-sm">${config.name}</span>
-                    <span class="text-stone-500 text-xs font-mono">$${config.cost.toFixed(2)}</span>
+                    <span class="text-stone-500 text-xs font-mono">$${config.cost.toFixed(3)}</span>
                 </div>
             `;
             
@@ -3342,7 +3337,7 @@ ${code}
                 infoDiv.innerHTML = `
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
-                        <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
+                        <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(3)}</span>
                     </div>
                     <button class="w-full bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -3471,7 +3466,7 @@ ${code}
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
-                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
+                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(3)}</span>
                         </div>
                         <div class="flex gap-2">
                             <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
@@ -3581,7 +3576,7 @@ ${code}
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
-                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
+                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(3)}</span>
                         </div>
                         <div class="flex gap-2">
                             <button class="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
@@ -3627,7 +3622,7 @@ ${code}
                     infoDiv.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-stone-200 font-semibold text-sm">${modelName}</span>
-                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(2)}</span>
+                            <span class="text-stone-500 text-xs font-mono">$${cost.toFixed(3)}</span>
                         </div>
                         <button class="w-full bg-stone-700 hover:bg-stone-600 text-stone-300 font-medium text-sm py-2.5 rounded-lg transition flex items-center justify-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -4577,7 +4572,7 @@ ${code}
                             <div class="text-stone-200 font-semibold mb-1.5 text-sm">${item.prompt.substring(0, 50)}${item.prompt.length > 50 ? '...' : ''}</div>
                             <div class="text-stone-500 text-xs flex flex-wrap gap-x-3 gap-y-1">
                                 <span class="flex items-center gap-1">${item.platform === 'mobile' ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>' : '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>'} ${item.platformText}</span>
-                                <span class="text-amber-500 font-mono">$${item.totalCost.toFixed(2)}</span>
+                                <span class="text-amber-500 font-mono">$${item.totalCost.toFixed(3)}</span>
                                 <span class="text-emerald-400">${successCount} 成功</span>
                                 ${errorCount > 0 ? `<span class="text-red-400">${errorCount} 失败</span>` : ''}
                             </div>
@@ -4734,7 +4729,7 @@ ${code}
                 <div class="grid grid-cols-3 gap-4 mb-3 pb-3 border-b border-gray-300">
                     <div class="text-center">
                         <div class="text-gray-600 text-xs">${isServerStats ? '全站总花费' : '总花费'}</div>
-                        <div class="text-lg font-bold text-gray-800">$${grandTotal.toFixed(2)}</div>
+                        <div class="text-lg font-bold text-gray-800">$${grandTotal.toFixed(3)}</div>
                     </div>
                     <div class="text-center">
                         <div class="text-gray-600 text-xs">${isServerStats ? '全站生成次数' : '总生成次数'}</div>
@@ -4757,7 +4752,7 @@ ${code}
                             <div class="text-gray-600 text-xs mt-0.5">生成 ${stat.count} 次</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-gray-800 font-bold text-sm">$${stat.totalCost.toFixed(2)}</div>
+                            <div class="text-gray-800 font-bold text-sm">$${stat.totalCost.toFixed(3)}</div>
                             <div class="text-gray-600 text-xs">平均 $${stat.averageCost.toFixed(4)}</div>
                         </div>
                     </div>
@@ -4835,7 +4830,7 @@ ${code}
                             <div class="p-4">
                                 <div class="flex justify-between items-center mb-2">
                                     <span class="text-gray-800 font-semibold">${result.modelName}</span>
-                                    <span class="text-gray-600 text-sm">$${result.cost.toFixed(2)}</span>
+                                    <span class="text-gray-600 text-sm">$${result.cost.toFixed(3)}</span>
                                 </div>
                             </div>
                         `;
