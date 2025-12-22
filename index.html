@@ -1472,6 +1472,188 @@
             console.log('✅ 模型ID自动修复完成:', fixes.join(', '));
         }
 
+        // 切换自定义模型表单显示/隐藏
+        function toggleCustomModelForm() {
+            const form = document.getElementById('customModelForm');
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+            } else {
+                form.classList.add('hidden');
+                // 清空表单
+                document.getElementById('customModelName').value = '';
+                document.getElementById('customModelId').value = '';
+                document.getElementById('customModelCost').value = '';
+                document.getElementById('customModelType').value = 'code';
+            }
+        }
+
+        // 添加自定义模型
+        function addCustomModel() {
+            const name = document.getElementById('customModelName').value.trim();
+            const modelId = document.getElementById('customModelId').value.trim();
+            const costStr = document.getElementById('customModelCost').value.trim();
+            const type = document.getElementById('customModelType').value;
+
+            // 验证必填字段
+            if (!name) {
+                alert('请输入模型显示名称');
+                return;
+            }
+
+            if (!modelId) {
+                alert('请输入模型ID');
+                return;
+            }
+
+            // 验证模型ID格式（应该包含斜杠，如 provider/model）
+            if (!modelId.includes('/')) {
+                alert('模型ID格式不正确\n应该是: provider/model-name\n例如: openai/gpt-4-turbo');
+                return;
+            }
+
+            // 解析成本（如果提供）
+            let cost = 0;
+            if (costStr) {
+                cost = parseFloat(costStr);
+                if (isNaN(cost) || cost < 0) {
+                    alert('成本必须是大于等于0的数字');
+                    return;
+                }
+            }
+
+            // 获取现有自定义模型
+            const customModelsStr = localStorage.getItem('custom_models');
+            let customModels = customModelsStr ? JSON.parse(customModelsStr) : {};
+
+            // 检查是否已存在
+            if (customModels[modelId]) {
+                if (!confirm(`模型 "${modelId}" 已存在，是否覆盖？`)) {
+                    return;
+                }
+            }
+
+            // 添加自定义模型
+            customModels[modelId] = {
+                id: modelId,
+                name: name,
+                cost: cost,
+                type: type,
+                custom: true
+            };
+
+            // 保存到localStorage
+            localStorage.setItem('custom_models', JSON.stringify(customModels));
+
+            // 更新MODEL_CONFIGS
+            MODEL_CONFIGS[modelId] = {
+                id: modelId,
+                name: name,
+                cost: cost,
+                type: type,
+                custom: true
+            };
+
+            console.log(`✅ 已添加自定义模型: ${name} (${modelId})`);
+
+            // 刷新自定义模型列表
+            renderCustomModelsList();
+
+            // 刷新模型选择列表
+            loadModelSelectionList();
+
+            // 隐藏表单并清空
+            toggleCustomModelForm();
+
+            // 显示成功提示
+            alert(`✅ 成功添加自定义模型: ${name}`);
+        }
+
+        // 渲染自定义模型列表
+        function renderCustomModelsList() {
+            const container = document.getElementById('customModelsList');
+            if (!container) return;
+
+            const customModelsStr = localStorage.getItem('custom_models');
+            const customModels = customModelsStr ? JSON.parse(customModelsStr) : {};
+
+            const modelIds = Object.keys(customModels);
+
+            if (modelIds.length === 0) {
+                container.innerHTML = '<p class="text-stone-500 text-sm text-center py-4">暂无自定义模型</p>';
+                return;
+            }
+
+            container.innerHTML = modelIds.map(modelId => {
+                const model = customModels[modelId];
+                const costDisplay = model.cost === 0
+                    ? '<span class="badge badge-mint text-[10px]">FREE</span>'
+                    : `<span class="text-stone-400 text-xs">$${model.cost.toFixed(3)}</span>`;
+
+                const typeDisplay = model.type === 'image'
+                    ? '<span class="badge badge-purple text-[10px]">图片</span>'
+                    : '<span class="badge badge-blue text-[10px]">代码</span>';
+
+                return `
+                    <div class="p-3 rounded-lg bg-stone-900/50 border border-stone-700/50 hover:border-stone-600/50 transition">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-stone-200 text-sm font-medium truncate">${model.name}</span>
+                                    ${typeDisplay}
+                                </div>
+                                <div class="text-stone-500 text-xs font-mono truncate mb-1">${modelId}</div>
+                                <div>${costDisplay}</div>
+                            </div>
+                            <button onclick="deleteCustomModel('${modelId}')"
+                                    class="ml-3 text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition"
+                                    title="删除此模型">
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 删除自定义模型
+        function deleteCustomModel(modelId) {
+            const customModelsStr = localStorage.getItem('custom_models');
+            if (!customModelsStr) return;
+
+            const customModels = JSON.parse(customModelsStr);
+            const model = customModels[modelId];
+
+            if (!model) return;
+
+            // 确认删除
+            if (!confirm(`确定要删除自定义模型 "${model.name}" 吗？`)) {
+                return;
+            }
+
+            // 从customModels中删除
+            delete customModels[modelId];
+            localStorage.setItem('custom_models', JSON.stringify(customModels));
+
+            // 从MODEL_CONFIGS中删除
+            if (MODEL_CONFIGS[modelId]) {
+                delete MODEL_CONFIGS[modelId];
+            }
+
+            // 从selected_models中移除
+            const selectedModelsStr = localStorage.getItem('selected_models');
+            if (selectedModelsStr) {
+                let selectedModels = JSON.parse(selectedModelsStr);
+                selectedModels = selectedModels.filter(id => id !== modelId);
+                localStorage.setItem('selected_models', JSON.stringify(selectedModels));
+            }
+
+            console.log(`🗑️ 已删除自定义模型: ${model.name} (${modelId})`);
+
+            // 刷新列表
+            renderCustomModelsList();
+            loadModelSelectionList();
+        }
+
         // 页面加载时初始化
         window.onload = () => {
             // 自动修复错误的模型ID（在加载模型列表之前）
@@ -1480,6 +1662,7 @@
             // API Key 已移至服务器端，前端无需检查
             updateCharCount();
             loadModelSelectionList(); // 加载模型列表（默认勾选设置中已选的模型）
+            renderCustomModelsList(); // 渲染自定义模型列表
 
             // 恢复调试模式设置
             const debugCheckbox = document.getElementById('debugMode');
