@@ -1694,8 +1694,17 @@
             const customModelsStr = localStorage.getItem('custom_models');
             if (!customModelsStr) return;
 
-            const customModels = JSON.parse(customModelsStr);
+            let customModels = JSON.parse(customModelsStr);
+            let needsSave = false;
+
+            // 修复旧数据：为缺少 model 字段的自定义模型添加 model 字段
             Object.entries(customModels).forEach(([modelId, modelData]) => {
+                if (!modelData.model) {
+                    console.log(`🔧 自动修复缺失的 model 字段: ${modelId}`);
+                    customModels[modelId].model = modelId;
+                    needsSave = true;
+                }
+
                 MODEL_CONFIGS[modelId] = {
                     id: modelId,
                     name: modelData.name,
@@ -1705,6 +1714,12 @@
                     custom: true
                 };
             });
+
+            // 如果修复了数据，保存回 localStorage
+            if (needsSave) {
+                localStorage.setItem('custom_models', JSON.stringify(customModels));
+                console.log('💾 已自动保存修复后的自定义模型配置');
+            }
 
             const count = Object.keys(customModels).length;
             if (count > 0) {
