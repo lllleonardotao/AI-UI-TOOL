@@ -1213,16 +1213,22 @@
                 savedSelected.every(key => defaultMainPageModels.includes(key)) &&
                 defaultMainPageModels.every(key => savedSelected.includes(key));
             
-            // 设置页面总是显示所有模型
-            const modelsToShow = Object.keys(MODEL_CONFIGS).filter(key => !key.startsWith('custom-'));
-            
-            // 获取所有模型并排序（按价格从低到高）
+            // 设置页面总是显示所有模型（包括内置模型和自定义模型）
+            const modelsToShow = Object.keys(MODEL_CONFIGS);
+
+            // 获取所有模型并排序（自定义模型排在前面，然后按价格从低到高）
             const sortedModels = modelsToShow
                 .map(key => ({
                     key: key,
                     ...MODEL_CONFIGS[key]
                 }))
-                .sort((a, b) => a.cost - b.cost); // 按价格从低到高排序
+                .sort((a, b) => {
+                    // 自定义模型排在前面
+                    if (a.custom && !b.custom) return -1;
+                    if (!a.custom && b.custom) return 1;
+                    // 其他按价格排序
+                    return a.cost - b.cost;
+                });
             
             // 确定默认选中状态：如果没有保存的，或者保存的是默认6个，则默认选中这6个
             const defaultSelected = savedSelected.length === 0 || isDefaultSelection
@@ -1241,15 +1247,21 @@
                     ? '<span class="badge badge-mint text-[10px]">FREE</span>'
                     : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(3)}</span>`;
                 
-                const typeDisplay = model.type === 'code' 
+                const typeDisplay = model.type === 'code'
                     ? '<span class="text-blue-400 text-xs">代码</span>'
                     : model.type === 'image'
                     ? '<span class="text-purple-400 text-xs">图片</span>'
                     : '<span class="text-amber-400 text-xs">描述</span>';
-                
+
+                // 自定义模型标识
+                const customBadge = model.custom
+                    ? '<span class="badge badge-amber text-[10px] mr-2">自定义</span>'
+                    : '';
+
             label.innerHTML = `
                     <input type="checkbox" id="settings-model-${model.key}" class="mr-3" ${isChecked ? 'checked' : ''}>
                 <span class="text-stone-200 font-medium flex-1 text-sm group-hover:text-stone-100 transition">${model.name}</span>
+                    ${customBadge}
                     ${typeDisplay}
                     <span class="mx-2 text-stone-700">·</span>
                     ${costDisplay}
@@ -1344,15 +1356,21 @@
                     ? '<span class="text-emerald-400 text-[10px] font-semibold uppercase tracking-wider">Free</span>'
                     : `<span class="text-stone-500 text-xs font-mono">$${model.cost.toFixed(3)}</span>`;
                 
-                const typeIcon = model.type === 'code' 
+                const typeIcon = model.type === 'code'
                     ? '<svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>'
                     : model.type === 'image'
                     ? '<svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
                     : '<svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
-                
+
+                // 自定义模型标识（更小的徽章）
+                const customBadge = model.custom
+                    ? '<span class="badge badge-amber text-[9px] px-1.5 py-0.5 ml-2">自定义</span>'
+                    : '';
+
             label.innerHTML = `
                     <input type="checkbox" id="model-${model.key}" class="mr-2.5" ${isChecked ? 'checked' : ''}>
                 <span class="text-stone-300 font-medium flex-1 text-sm group-hover:text-stone-100 transition truncate">${model.name}</span>
+                    ${customBadge}
                     ${typeIcon}
                     <span class="ml-2">${costDisplay}</span>
             `;
@@ -1555,17 +1573,29 @@
 
             console.log(`✅ 已添加自定义模型: ${name} (${modelId})`);
 
+            // 自动添加到 selected_models（默认勾选）
+            const selectedModelsStr = localStorage.getItem('selected_models');
+            let selectedModels = selectedModelsStr ? JSON.parse(selectedModelsStr) : [];
+            if (!selectedModels.includes(modelId)) {
+                selectedModels.push(modelId);
+                localStorage.setItem('selected_models', JSON.stringify(selectedModels));
+                console.log(`✅ 已将 ${modelId} 添加到选中模型列表`);
+            }
+
             // 刷新自定义模型列表
             renderCustomModelsList();
 
-            // 刷新模型选择列表
+            // 刷新设置页的模型勾选列表
+            loadSettingsModelList();
+
+            // 刷新主页面的模型选择列表
             loadModelSelectionList();
 
             // 隐藏表单并清空
             toggleCustomModelForm();
 
             // 显示成功提示
-            alert(`✅ 成功添加自定义模型: ${name}`);
+            alert(`✅ 成功添加自定义模型: ${name}\n\n该模型已自动添加到模型选择列表并勾选`);
         }
 
         // 渲染自定义模型列表
@@ -1651,11 +1681,37 @@
 
             // 刷新列表
             renderCustomModelsList();
-            loadModelSelectionList();
+            loadSettingsModelList(); // 刷新设置页的模型勾选列表
+            loadModelSelectionList(); // 刷新主页面的模型列表
+        }
+
+        // 从 localStorage 加载自定义模型到 MODEL_CONFIGS
+        function loadCustomModelsToConfig() {
+            const customModelsStr = localStorage.getItem('custom_models');
+            if (!customModelsStr) return;
+
+            const customModels = JSON.parse(customModelsStr);
+            Object.entries(customModels).forEach(([modelId, modelData]) => {
+                MODEL_CONFIGS[modelId] = {
+                    id: modelId,
+                    name: modelData.name,
+                    cost: modelData.cost || 0,
+                    type: modelData.type || 'code',
+                    custom: true
+                };
+            });
+
+            const count = Object.keys(customModels).length;
+            if (count > 0) {
+                console.log(`✅ 已加载 ${count} 个自定义模型到配置`);
+            }
         }
 
         // 页面加载时初始化
         window.onload = () => {
+            // 加载自定义模型到 MODEL_CONFIGS（必须在所有列表加载之前）
+            loadCustomModelsToConfig();
+
             // 自动修复错误的模型ID（在加载模型列表之前）
             autoFixModelIds();
 
