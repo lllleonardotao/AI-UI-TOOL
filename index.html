@@ -1431,7 +1431,8 @@
                     if (!customModels[newId]) {
                         customModels[newId] = {
                             ...customModels[oldId],
-                            id: newId
+                            id: newId,
+                            model: newId  // ← 更新 model 字段为新 ID
                         };
                     }
 
@@ -1444,7 +1445,8 @@
                     if (MODEL_CONFIGS[oldId]) {
                         MODEL_CONFIGS[newId] = {
                             ...MODEL_CONFIGS[oldId],
-                            id: newId
+                            id: newId,
+                            model: newId  // ← 更新 model 字段为新 ID
                         };
                         delete MODEL_CONFIGS[oldId];
                     }
@@ -1554,6 +1556,7 @@
             customModels[modelId] = {
                 id: modelId,
                 name: name,
+                model: modelId,  // ← 添加 model 字段（用于 API 调用）
                 cost: cost,
                 type: type,
                 custom: true
@@ -1566,6 +1569,7 @@
             MODEL_CONFIGS[modelId] = {
                 id: modelId,
                 name: name,
+                model: modelId,  // ← 添加 model 字段（用于 API 调用）
                 cost: cost,
                 type: type,
                 custom: true
@@ -1695,6 +1699,7 @@
                 MODEL_CONFIGS[modelId] = {
                     id: modelId,
                     name: modelData.name,
+                    model: modelData.model || modelId,  // ← 添加 model 字段，兼容旧数据
                     cost: modelData.cost || 0,
                     type: modelData.type || 'code',
                     custom: true
