@@ -82,9 +82,14 @@
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">✨ AI UI Design Comparator</h1>
                     <p class="text-gray-600">一键对比多个AI模型的UI设计生成效果</p>
                 </div>
-                <button onclick="showSettings()" class="glass-dark text-gray-800 font-medium px-4 py-2 rounded-xl hover:bg-white/30 transition">
-                    ⚙️ 设置
-                </button>
+                <div class="flex gap-3">
+                    <button onclick="showHistory()" class="glass-dark text-gray-800 font-medium px-4 py-2 rounded-xl hover:bg-white/30 transition">
+                        📜 历史记录
+                    </button>
+                    <button onclick="showSettings()" class="glass-dark text-gray-800 font-medium px-4 py-2 rounded-xl hover:bg-white/30 transition">
+                        ⚙️ 设置
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -285,6 +290,41 @@
         </div>
     </div>
 
+    <!-- History Modal -->
+    <div id="historyModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="glass rounded-3xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">📜 生成历史</h2>
+                <button onclick="closeHistory()" class="text-gray-600 hover:text-gray-800 text-2xl">✕</button>
+            </div>
+
+            <!-- History Stats -->
+            <div class="glass-dark p-4 rounded-xl mb-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-gray-700 font-medium">共 </span>
+                        <span id="historyCount" class="text-purple-600 font-bold text-lg">0</span>
+                        <span class="text-gray-700 font-medium"> 条记录</span>
+                    </div>
+                    <button onclick="clearAllHistory()" class="text-red-600 hover:text-red-700 font-medium text-sm">
+                        🗑️ 清空全部
+                    </button>
+                </div>
+            </div>
+
+            <!-- History List -->
+            <div id="historyList" class="space-y-4">
+                <!-- History items will be added here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="historyEmpty" class="text-center py-12 hidden">
+                <div class="text-6xl mb-4">📭</div>
+                <p class="text-gray-600">暂无生成历史</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Image Preview Modal -->
     <div id="imageModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeImageModal()">
         <div class="max-w-4xl max-h-[90vh] overflow-auto">
@@ -338,6 +378,7 @@
         let currentResults = [];
         let customModels = JSON.parse(localStorage.getItem('custom_models') || '[]');
         let debugMode = localStorage.getItem('debug_mode') === 'true';
+        let generationHistory = JSON.parse(localStorage.getItem('generation_history') || '[]');
 
         // 调试日志函数
         function debugLog(...args) {
@@ -538,6 +579,178 @@
             }
         }
 
+        // 历史记录相关
+        function showHistory() {
+            loadHistory();
+            document.getElementById('historyModal').classList.remove('hidden');
+            document.getElementById('historyModal').classList.add('flex');
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').classList.add('hidden');
+            document.getElementById('historyModal').classList.remove('flex');
+        }
+
+        function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            const historyEmpty = document.getElementById('historyEmpty');
+            const historyCount = document.getElementById('historyCount');
+
+            historyCount.textContent = generationHistory.length;
+
+            if (generationHistory.length === 0) {
+                historyList.innerHTML = '';
+                historyEmpty.classList.remove('hidden');
+                return;
+            }
+
+            historyEmpty.classList.add('hidden');
+            historyList.innerHTML = '';
+
+            // 按时间倒序显示（最新的在前面）
+            const sortedHistory = [...generationHistory].reverse();
+
+            sortedHistory.forEach((item, index) => {
+                const actualIndex = generationHistory.length - 1 - index;
+                const historyItem = document.createElement('div');
+                historyItem.className = 'glass-dark p-4 rounded-xl';
+
+                // 格式化时间
+                const date = new Date(item.timestamp);
+                const timeStr = date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // 生成缩略图（取第一个成功的结果）
+                let thumbnail = '';
+                const firstSuccess = item.results.find(r => !r.isError);
+                if (firstSuccess && firstSuccess.result && firstSuccess.result.content) {
+                    const result = firstSuccess.result;
+                    if (result.type === 'image') {
+                        thumbnail = `<img src="${result.content}" class="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition" onclick="viewHistoryImage('${result.content.replace(/'/g, "\\'")}')" alt="预览">`;
+                    } else if (result.type === 'html' || result.type === 'svg') {
+                        thumbnail = `<div class="w-20 h-20 bg-gradient-to-br from-purple-400 to-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-2xl cursor-pointer hover:opacity-80 transition" onclick="viewHistoryContent(${actualIndex})">${result.type.toUpperCase()}</div>`;
+                    } else {
+                        thumbnail = `<div class="w-20 h-20 bg-gray-300 rounded-lg flex items-center justify-center text-gray-600 font-bold">📄</div>`;
+                    }
+                } else {
+                    thumbnail = `<div class="w-20 h-20 bg-red-100 rounded-lg flex items-center justify-center text-red-600 font-bold text-2xl">❌</div>`;
+                }
+
+                historyItem.innerHTML = `
+                    <div class="flex gap-4">
+                        ${thumbnail}
+                        <div class="flex-1">
+                            <p class="text-gray-800 font-medium mb-2 line-clamp-2">${item.prompt}</p>
+                            <div class="flex items-center gap-4 text-xs text-gray-600">
+                                <span>⏰ ${timeStr}</span>
+                                <span>💰 $${item.totalCost.toFixed(4)}</span>
+                                <span>✅ ${item.results.filter(r => !r.isError).length}/${item.results.length} 成功</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="viewHistoryItem(${actualIndex})" class="px-4 py-2 glass text-gray-800 text-sm font-medium rounded-lg hover:bg-white/30 transition">
+                                👁️ 查看
+                            </button>
+                            <button onclick="deleteHistoryItem(${actualIndex})" class="px-4 py-2 glass text-red-600 text-sm font-medium rounded-lg hover:bg-white/30 transition">
+                                🗑️ 删除
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        function saveToHistory(prompt, results, totalCost) {
+            const historyItem = {
+                timestamp: Date.now(),
+                prompt: prompt,
+                results: results,
+                totalCost: totalCost
+            };
+
+            generationHistory.push(historyItem);
+
+            // 限制历史记录数量（最多保存100条）
+            if (generationHistory.length > 100) {
+                generationHistory.shift();
+            }
+
+            localStorage.setItem('generation_history', JSON.stringify(generationHistory));
+            debugLog('💾 已保存到历史记录');
+        }
+
+        function viewHistoryImage(imageUrl) {
+            showImageModal(imageUrl);
+        }
+
+        function viewHistoryContent(index) {
+            const item = generationHistory[index];
+            if (!item) return;
+
+            const firstSuccess = item.results.find(r => !r.isError);
+            if (!firstSuccess || !firstSuccess.result) return;
+
+            const result = firstSuccess.result;
+            if (result.type === 'html') {
+                showHtmlModal(result.content, firstSuccess.modelName);
+            } else if (result.type === 'svg') {
+                showCodeModal('SVG', result.content, firstSuccess.modelName);
+            }
+        }
+
+        function viewHistoryItem(index) {
+            const item = generationHistory[index];
+            if (!item) return;
+
+            // 关闭历史记录模态框
+            closeHistory();
+
+            // 重新填充prompt
+            document.getElementById('promptInput').value = item.prompt;
+            updateCharCount();
+
+            // 显示结果
+            currentResults = item.results;
+            const resultsGrid = document.getElementById('resultsGrid');
+            resultsGrid.innerHTML = '';
+
+            item.results.forEach(result => {
+                addResultCard(
+                    result.modelName,
+                    result.result,
+                    result.cost,
+                    result.isError,
+                    result.errorMsg
+                );
+            });
+
+            // 滚动到结果区域
+            resultsGrid.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteHistoryItem(index) {
+            if (!confirm('确定删除这条历史记录吗？')) return;
+
+            generationHistory.splice(index, 1);
+            localStorage.setItem('generation_history', JSON.stringify(generationHistory));
+            loadHistory();
+        }
+
+        function clearAllHistory() {
+            if (!confirm('确定清空所有历史记录吗？此操作不可恢复！')) return;
+
+            generationHistory = [];
+            localStorage.setItem('generation_history', JSON.stringify(generationHistory));
+            loadHistory();
+        }
+
         // 模板相关
         function useTemplate(type) {
             document.getElementById('promptInput').value = TEMPLATES[type];
@@ -614,6 +827,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
             // 等待所有完成
             await Promise.allSettled(promises);
+
+            // 保存到历史记录
+            const totalCost = currentResults.reduce((sum, r) => sum + r.cost, 0);
+            saveToHistory(prompt, currentResults, totalCost);
 
             // 恢复按钮
             btn.disabled = false;
