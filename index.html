@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI UI Design Comparator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         /* 玻璃态效果 - 增强对比度 */
         .glass {
@@ -1152,7 +1153,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 }
 
                 // 创建信息栏
-                const infoDiv = createInfoBar(modelName, cost, resultData.type, resultData.content);
+                const infoDiv = createInfoBar(modelName, cost, resultData.type, resultData.content, contentContainer);
 
                 card.appendChild(contentContainer);
                 card.appendChild(infoDiv);
@@ -1295,7 +1296,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
         }
 
         // 创建信息栏
-        function createInfoBar(modelName, cost, contentType, content) {
+        function createInfoBar(modelName, cost, contentType, content, contentContainer = null) {
             const infoDiv = document.createElement('div');
             infoDiv.className = 'p-4';
 
@@ -1317,8 +1318,9 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             if (contentType === 'image') {
                 buttons.push('<button class="download-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">⬇️ 下载</button>');
             } else if (contentType === 'html' || contentType === 'svg') {
+                buttons.push('<button class="copy-image-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">🖼️ 复制图片</button>');
                 buttons.push('<button class="download-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">⬇️ 下载代码</button>');
-                buttons.push('<button class="copy-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">📋 复制</button>');
+                buttons.push('<button class="copy-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">📋 复制代码</button>');
             } else if (contentType === 'json' || contentType === 'text') {
                 buttons.push('<button class="copy-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">📋 复制</button>');
             }
@@ -1335,6 +1337,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             setTimeout(() => {
                 const downloadBtn = infoDiv.querySelector('.download-btn');
                 const copyBtn = infoDiv.querySelector('.copy-btn');
+                const copyImageBtn = infoDiv.querySelector('.copy-image-btn');
 
                 if (downloadBtn) {
                     downloadBtn.onclick = (e) => {
@@ -1347,6 +1350,13 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     copyBtn.onclick = (e) => {
                         e.stopPropagation();
                         copyContentToClipboard(content, modelName);
+                    };
+                }
+
+                if (copyImageBtn && contentContainer) {
+                    copyImageBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        await copyAsImage(contentContainer, modelName, contentType);
                     };
                 }
             }, 0);
@@ -1392,6 +1402,81 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 console.error('复制失败:', err);
                 alert('❌ 复制失败，请查看Console');
             });
+        }
+
+        // 复制渲染后的内容为图片
+        async function copyAsImage(container, modelName, contentType) {
+            try {
+                console.log('📸 开始截图:', modelName, contentType);
+
+                // 显示加载提示
+                const originalHTML = container.innerHTML;
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'absolute inset-0 bg-black/50 flex items-center justify-center z-50';
+                loadingDiv.innerHTML = '<div class="text-white text-sm">正在生成图片...</div>';
+                container.style.position = 'relative';
+                container.appendChild(loadingDiv);
+
+                // 等待iframe内容加载完成（如果是HTML类型）
+                if (contentType === 'html') {
+                    const iframe = container.querySelector('iframe');
+                    if (iframe) {
+                        await new Promise(resolve => {
+                            if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+                                resolve();
+                            } else {
+                                iframe.onload = resolve;
+                                setTimeout(resolve, 2000); // 最多等2秒
+                            }
+                        });
+                    }
+                }
+
+                // 使用html2canvas截图
+                const canvas = await html2canvas(container, {
+                    backgroundColor: contentType === 'svg' ? '#ffffff' : null,
+                    scale: 2, // 提高清晰度
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
+                });
+
+                // 移除加载提示
+                container.removeChild(loadingDiv);
+
+                // 将canvas转换为blob
+                canvas.toBlob(async (blob) => {
+                    try {
+                        // 使用Clipboard API复制图片
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                'image/png': blob
+                            })
+                        ]);
+                        alert('✅ 图片已复制到剪贴板');
+                        console.log('✅ 图片复制成功');
+                    } catch (err) {
+                        console.error('❌ 剪贴板写入失败:', err);
+                        // 降级方案：提供下载
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${modelName}_${Date.now()}.png`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        alert('⚠️ 无法复制到剪贴板，已自动下载图片');
+                    }
+                }, 'image/png');
+
+            } catch (error) {
+                console.error('❌ 截图失败:', error);
+                alert('❌ 截图失败: ' + error.message);
+                // 移除加载提示
+                const loadingDiv = container.querySelector('.absolute.inset-0');
+                if (loadingDiv) {
+                    container.removeChild(loadingDiv);
+                }
+            }
         }
 
         // 显示HTML模态框
