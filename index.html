@@ -299,25 +299,29 @@
                 name: 'Gemini Image (免费)',
                 model: 'google/gemini-2.5-flash-image-preview',
                 cost: 0,
-                type: 'image'
+                type: 'image',
+                supportsModalities: true  // Gemini需要modalities参数
             },
             'flux': {
                 name: 'Flux Pro',
                 model: 'black-forest-labs/flux.2-pro',
                 cost: 0.05,
-                type: 'image'
+                type: 'image',
+                supportsModalities: false  // Flux不需要modalities
             },
             'gpt5': {
                 name: 'GPT-5 Image',
                 model: 'openai/gpt-5-image',
                 cost: 0.04,
-                type: 'image'
+                type: 'image',
+                supportsModalities: false  // GPT-5不需要modalities
             },
             'claude': {
                 name: 'Claude 3.5 (描述)',
                 model: 'anthropic/claude-3.5-sonnet',
                 cost: 0.01,
-                type: 'text-to-image-desc'
+                type: 'text-to-image-desc',
+                supportsModalities: false
             }
         };
 
@@ -385,14 +389,18 @@
         }
 
         function addModelToSelector(model, key) {
+            // 检测是否需要modalities参数（只有Gemini图片模型需要）
+            const needsModalities = model.model.includes('gemini') && model.model.includes('image');
+
             // 添加到MODEL_CONFIGS
             MODEL_CONFIGS[key] = {
                 name: model.name,
                 model: model.model,
                 cost: model.cost,
-                type: 'image'
+                type: 'image',
+                supportsModalities: needsModalities
             };
-            
+
             // 检查是否已存在
             if (document.getElementById(`model-${key}`)) return;
             
@@ -618,20 +626,22 @@ Avoid: 3D elements, realistic photos, cartoon style`;
 
         async function generateWithModel(modelKey, prompt) {
             const config = MODEL_CONFIGS[modelKey];
-            
+
             // 添加进度项
             addProgressItem(modelKey, 'pending');
 
             try {
                 let imageUrl;
-                
+
                 if (config.type === 'image') {
                     // 直接生成图片的模型（Gemini, Flux, GPT-5）
-                    imageUrl = await generateImage(config.model, prompt);
+                    imageUrl = await generateImage(config.model, prompt, config);
                 } else {
                     // Claude：生成描述后用免费的Gemini生成图
                     const description = await generateDescription(config.model, prompt);
-                    imageUrl = await generateImage('google/gemini-2.5-flash-image-preview', description);
+                    // 使用Gemini配置
+                    const geminiConfig = MODEL_CONFIGS['gemini'];
+                    imageUrl = await generateImage(geminiConfig.model, description, geminiConfig);
                 }
 
                 // 成功
@@ -647,7 +657,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }
         }
 
-        async function generateImage(model, prompt) {
+        async function generateImage(model, prompt, modelConfig = null) {
             debugLog('🚀 Calling model:', model);
             debugLog('📝 Prompt:', prompt.substring(0, 100) + '...');
 
@@ -662,9 +672,12 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 ]
             };
 
-            // 只对支持的模型添加 modalities
-            if (model.includes('gemini') && model.includes('image')) {
+            // 根据模型配置添加 modalities 参数
+            if (modelConfig && modelConfig.supportsModalities) {
                 requestBody.modalities = ["image", "text"];
+                debugLog('✓ Adding modalities parameter for this model');
+            } else {
+                debugLog('✓ Skipping modalities parameter for this model');
             }
 
             debugLog('📤 Request body:', JSON.stringify(requestBody, null, 2));
@@ -688,7 +701,10 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     const error = JSON.parse(errorText);
                     errorMessage = error.error?.message || error.message || errorMessage;
                 } catch (e) {
-                    errorMessage = errorText.substring(0, 100);
+                    // 保留更多错误信息，最多500字符，避免丢失关键细节
+                    errorMessage = errorText.length > 500
+                        ? errorText.substring(0, 500) + '...(详见控制台)'
+                        : errorText;
                 }
                 throw new Error(errorMessage);
             }
@@ -713,7 +729,23 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 console.error('❌ No image found in response');
                 console.error('Available message fields:', Object.keys(message));
                 console.error('Full message:', JSON.stringify(message, null, 2));
-                throw new Error('模型返回了数据，但没有找到图片。请检查控制台日志查看详细响应。');
+
+                // 提供更详细的调试信息
+                const messageInfo = {
+                    hasContent: !!message.content,
+                    contentType: typeof message.content,
+                    isContentArray: Array.isArray(message.content),
+                    hasImages: !!message.images,
+                    hasImageUrl: !!message.image_url,
+                    hasImage: !!message.image,
+                    hasData: !!message.data,
+                    availableKeys: Object.keys(message)
+                };
+                console.error('📊 Message structure analysis:', messageInfo);
+
+                throw new Error(`模型${model}返回了数据，但没有找到图片。\n` +
+                    `可用字段: ${Object.keys(message).join(', ')}\n` +
+                    `请启用调试模式并检查控制台日志查看详细响应。`);
             }
 
             debugLog('✅ Successfully extracted image');
@@ -810,7 +842,52 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 return message.image_url;
             }
 
+            // 方法5: 检查data字段（某些API可能使用）
+            if (message.data) {
+                debugLog('🔍 Checking message.data');
+                if (typeof message.data === 'string' && message.data.startsWith('data:image')) {
+                    debugLog('✅ Found message.data (base64)');
+                    return message.data;
+                }
+                if (Array.isArray(message.data) && message.data.length > 0) {
+                    const firstItem = message.data[0];
+                    if (firstItem && (firstItem.url || firstItem.b64_json)) {
+                        debugLog('✅ Found message.data[0].url or b64_json');
+                        return firstItem.url || `data:image/png;base64,${firstItem.b64_json}`;
+                    }
+                }
+            }
+
+            // 方法6: 检查artifacts字段（Claude等可能使用）
+            if (message.artifacts && Array.isArray(message.artifacts)) {
+                debugLog('🔍 Checking artifacts array');
+                for (const artifact of message.artifacts) {
+                    if (artifact.type === 'image' && artifact.data) {
+                        debugLog('✅ Found artifact image');
+                        return artifact.data;
+                    }
+                }
+            }
+
+            // 方法7: 检查attachments字段
+            if (message.attachments && Array.isArray(message.attachments)) {
+                debugLog('🔍 Checking attachments array');
+                for (const attachment of message.attachments) {
+                    if (attachment.type === 'image' || attachment.content_type?.startsWith('image/')) {
+                        if (attachment.url) {
+                            debugLog('✅ Found attachment.url');
+                            return attachment.url;
+                        }
+                        if (attachment.data) {
+                            debugLog('✅ Found attachment.data');
+                            return attachment.data;
+                        }
+                    }
+                }
+            }
+
             // 未找到
+            debugLog('❌ No image found after checking all methods');
             return null;
         }
 
