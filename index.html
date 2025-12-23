@@ -21,27 +21,27 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        /* 渐变背景 */
+        /* 渐变背景 - 琥珀金主题 */
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
             min-height: 100vh;
         }
         
-        /* 按钮动画 */
+        /* 按钮动画 - 琥珀金主题 */
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             transition: all 0.3s ease;
         }
-        
+
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
         }
         
-        /* 加载动画 */
+        /* 加载动画 - 琥珀金主题 */
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #667eea;
+            border-top: 3px solid #f59e0b;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -106,7 +106,7 @@
                         <textarea 
                             id="promptInput"
                             rows="6"
-                            class="w-full p-4 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                            class="w-full p-4 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
                             placeholder="例如：极简风格的移动APP登录页面，包含logo、邮箱输入、密码输入、登录按钮，玻璃态设计，白色背景"
                         ></textarea>
                         <div class="text-gray-500 text-xs mt-1 text-right">
@@ -219,11 +219,11 @@
                 <input 
                     type="password" 
                     id="apiKeyInput"
-                    class="w-full p-3 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    class="w-full p-3 rounded-xl bg-white/50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     placeholder="sk-or-v1-xxxxx..."
                 >
                 <p class="text-gray-600 text-xs mt-2">
-                    没有API Key？<a href="https://openrouter.ai/" target="_blank" class="text-purple-600 font-medium underline">点击注册</a>
+                    没有API Key？<a href="https://openrouter.ai/" target="_blank" class="text-amber-600 font-medium underline">点击注册</a>
                 </p>
             </div>
 
@@ -303,7 +303,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <span class="text-gray-700 font-medium">共 </span>
-                        <span id="historyCount" class="text-purple-600 font-bold text-lg">0</span>
+                        <span id="historyCount" class="text-amber-600 font-bold text-lg">0</span>
                         <span class="text-gray-700 font-medium"> 条记录</span>
                     </div>
                     <button onclick="clearAllHistory()" class="text-red-600 hover:text-red-700 font-medium text-sm">
@@ -633,7 +633,7 @@
                     if (result.type === 'image') {
                         thumbnail = `<img src="${result.content}" class="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition" onclick="viewHistoryImage('${result.content.replace(/'/g, "\\'")}')" alt="预览">`;
                     } else if (result.type === 'html' || result.type === 'svg') {
-                        thumbnail = `<div class="w-20 h-20 bg-gradient-to-br from-purple-400 to-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-2xl cursor-pointer hover:opacity-80 transition" onclick="viewHistoryContent(${actualIndex})">${result.type.toUpperCase()}</div>`;
+                        thumbnail = `<div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-400 rounded-lg flex items-center justify-center text-white font-bold text-2xl cursor-pointer hover:opacity-80 transition" onclick="viewHistoryContent(${actualIndex})">${result.type.toUpperCase()}</div>`;
                     } else {
                         thumbnail = `<div class="w-20 h-20 bg-gray-300 rounded-lg flex items-center justify-center text-gray-600 font-bold">📄</div>`;
                     }
