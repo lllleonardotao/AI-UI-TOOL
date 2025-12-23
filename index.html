@@ -631,29 +631,29 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             addProgressItem(modelKey, 'pending');
 
             try {
-                let imageUrl;
+                let result;
 
                 if (config.type === 'image') {
                     // 直接生成图片的模型（Gemini, Flux, GPT-5）
-                    imageUrl = await generateImage(config.model, prompt, config);
+                    result = await generateImage(config.model, prompt, config);
                 } else {
                     // Claude：生成描述后用免费的Gemini生成图
                     const description = await generateDescription(config.model, prompt);
                     // 使用Gemini配置
                     const geminiConfig = MODEL_CONFIGS['gemini'];
-                    imageUrl = await generateImage(geminiConfig.model, description, geminiConfig);
+                    result = await generateImage(geminiConfig.model, description, geminiConfig);
                 }
 
                 // 成功
                 updateProgressItem(modelKey, 'success');
-                addResultCard(config.name, imageUrl, config.cost, false);
-                
+                addResultCard(config.name, result, config.cost, false);
+
             } catch (error) {
                 console.error(`${config.name} 生成失败:`, error);
                 updateProgressItem(modelKey, 'error', error.message);
-                
+
                 // 添加错误卡片（不会消失）
-                addResultCard(config.name, '', config.cost, true, error.message);
+                addResultCard(config.name, null, config.cost, true, error.message);
             }
         }
 
@@ -722,11 +722,11 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             debugLog('📦 Message keys:', Object.keys(message));
             debugLog('📦 Message structure:', JSON.stringify(message, null, 2));
 
-            // 尝试从响应中提取图片URL
-            const imageUrl = extractImageFromResponse(message);
+            // 尝试从响应中提取内容（支持多种格式）
+            const result = extractImageFromResponse(message);
 
-            if (!imageUrl) {
-                console.error('❌ No image found in response');
+            if (!result) {
+                console.error('❌ No content found in response');
                 console.error('Available message fields:', Object.keys(message));
                 console.error('Full message:', JSON.stringify(message, null, 2));
 
@@ -743,20 +743,20 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 };
                 console.error('📊 Message structure analysis:', messageInfo);
 
-                throw new Error(`模型${model}返回了数据，但没有找到图片。\n` +
+                throw new Error(`模型${model}返回了数据，但无法解析内容。\n` +
                     `可用字段: ${Object.keys(message).join(', ')}\n` +
                     `请启用调试模式并检查控制台日志查看详细响应。`);
             }
 
-            debugLog('✅ Successfully extracted image');
-            debugLog('Image type:', typeof imageUrl);
-            debugLog('Image length:', imageUrl.length);
-            debugLog('Image preview:', imageUrl.substring(0, 100));
+            debugLog('✅ Successfully extracted content');
+            debugLog('Content type:', result.type);
+            debugLog('Content length:', result.content.length);
+            debugLog('Content preview:', result.content.substring(0, 100));
 
-            return imageUrl;
+            return result;
         }
 
-        // 从API响应中提取图片URL的统一函数
+        // 从API响应中提取内容的通用函数 - 支持多种格式
         function extractImageFromResponse(message) {
             // 方法1: 检查 content 数组 (最常见的格式)
             if (Array.isArray(message.content)) {
@@ -769,11 +769,11 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     if (item.type === 'image_url') {
                         if (typeof item.image_url === 'string') {
                             debugLog('✅ Found image_url (string)');
-                            return item.image_url;
+                            return { type: 'image', content: item.image_url };
                         }
                         if (item.image_url && item.image_url.url) {
                             debugLog('✅ Found image_url.url');
-                            return item.image_url.url;
+                            return { type: 'image', content: item.image_url.url };
                         }
                     }
 
@@ -781,27 +781,94 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     if (item.type === 'image') {
                         if (item.url) {
                             debugLog('✅ Found item.url');
-                            return item.url;
+                            return { type: 'image', content: item.url };
                         }
                         if (item.data) {
                             debugLog('✅ Found item.data');
-                            return item.data;
+                            return { type: 'image', content: item.data };
                         }
                         if (item.source && item.source.data) {
                             debugLog('✅ Found item.source.data');
-                            return item.source.data;
+                            return { type: 'image', content: item.source.data };
                         }
+                    }
+
+                    // 视频格式
+                    if (item.type === 'video' && item.url) {
+                        debugLog('✅ Found video');
+                        return { type: 'video', content: item.url };
+                    }
+
+                    // 音频格式
+                    if (item.type === 'audio' && item.url) {
+                        debugLog('✅ Found audio');
+                        return { type: 'audio', content: item.url };
                     }
                 }
             }
 
-            // 方法2: content 是字符串，可能包含URL或markdown
+            // 方法2: content 是字符串，可能包含各种格式
             if (typeof message.content === 'string') {
                 debugLog('🔍 Checking string content');
-                const url = extractImageUrl(message.content);
-                if (url) {
-                    debugLog('✅ Extracted URL from string');
-                    return url;
+
+                // 检测HTML代码
+                if (message.content.includes('<!DOCTYPE') ||
+                    message.content.includes('<html') ||
+                    (message.content.includes('<body') && message.content.includes('</body>'))) {
+                    debugLog('✅ Detected HTML code');
+                    return { type: 'html', content: message.content };
+                }
+
+                // 检测SVG代码
+                if (message.content.includes('<svg') && message.content.includes('</svg>')) {
+                    debugLog('✅ Detected SVG code');
+                    return { type: 'svg', content: message.content };
+                }
+
+                // 检测JSON数据
+                if ((message.content.trim().startsWith('{') && message.content.trim().endsWith('}')) ||
+                    (message.content.trim().startsWith('[') && message.content.trim().endsWith(']'))) {
+                    try {
+                        JSON.parse(message.content);
+                        debugLog('✅ Detected JSON data');
+                        return { type: 'json', content: message.content };
+                    } catch (e) {
+                        // 不是有效的JSON，继续检查其他格式
+                    }
+                }
+
+                // 尝试提取图片URL
+                const imageUrl = extractImageUrl(message.content);
+                if (imageUrl) {
+                    debugLog('✅ Extracted image URL from string');
+                    return { type: 'image', content: imageUrl };
+                }
+
+                // 检测视频URL
+                const videoUrl = extractMediaUrl(message.content, 'video');
+                if (videoUrl) {
+                    debugLog('✅ Extracted video URL');
+                    return { type: 'video', content: videoUrl };
+                }
+
+                // 检测音频URL
+                const audioUrl = extractMediaUrl(message.content, 'audio');
+                if (audioUrl) {
+                    debugLog('✅ Extracted audio URL');
+                    return { type: 'audio', content: audioUrl };
+                }
+
+                // 检测文件下载链接
+                const fileUrl = extractFileUrl(message.content);
+                if (fileUrl) {
+                    debugLog('✅ Extracted file download URL');
+                    return { type: 'file', content: fileUrl.url, metadata: { filename: fileUrl.filename } };
+                }
+
+                // 如果都不是，返回纯文本
+                if (message.content.length > 0) {
+                    debugLog('✅ Treating as plain text');
+                    return { type: 'text', content: message.content };
                 }
             }
 
@@ -811,35 +878,35 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 const imageData = message.images[0];
                 if (typeof imageData === 'string') {
                     debugLog('✅ Found images[0] (string)');
-                    return imageData;
+                    return { type: 'image', content: imageData };
                 }
                 if (imageData && typeof imageData === 'object') {
                     // 检查嵌套的 image_url 对象（Flux/GPT格式）
                     if (imageData.image_url) {
                         if (typeof imageData.image_url === 'string') {
                             debugLog('✅ Found images[0].image_url (string)');
-                            return imageData.image_url;
+                            return { type: 'image', content: imageData.image_url };
                         }
                         if (imageData.image_url.url) {
                             debugLog('✅ Found images[0].image_url.url');
-                            return imageData.image_url.url;
+                            return { type: 'image', content: imageData.image_url.url };
                         }
                     }
                     // 检查直接字段
-                    if (imageData.url) return imageData.url;
-                    if (imageData.data) return imageData.data;
-                    if (imageData.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
+                    if (imageData.url) return { type: 'image', content: imageData.url };
+                    if (imageData.data) return { type: 'image', content: imageData.data };
+                    if (imageData.b64_json) return { type: 'image', content: `data:image/png;base64,${imageData.b64_json}` };
                 }
             }
 
             // 方法4: 直接字段
             if (message.image) {
                 debugLog('✅ Found message.image');
-                return message.image;
+                return { type: 'image', content: message.image };
             }
             if (message.image_url) {
                 debugLog('✅ Found message.image_url');
-                return message.image_url;
+                return { type: 'image', content: message.image_url };
             }
 
             // 方法5: 检查data字段（某些API可能使用）
@@ -847,13 +914,14 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 debugLog('🔍 Checking message.data');
                 if (typeof message.data === 'string' && message.data.startsWith('data:image')) {
                     debugLog('✅ Found message.data (base64)');
-                    return message.data;
+                    return { type: 'image', content: message.data };
                 }
                 if (Array.isArray(message.data) && message.data.length > 0) {
                     const firstItem = message.data[0];
                     if (firstItem && (firstItem.url || firstItem.b64_json)) {
                         debugLog('✅ Found message.data[0].url or b64_json');
-                        return firstItem.url || `data:image/png;base64,${firstItem.b64_json}`;
+                        const content = firstItem.url || `data:image/png;base64,${firstItem.b64_json}`;
+                        return { type: 'image', content };
                     }
                 }
             }
@@ -864,7 +932,7 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 for (const artifact of message.artifacts) {
                     if (artifact.type === 'image' && artifact.data) {
                         debugLog('✅ Found artifact image');
-                        return artifact.data;
+                        return { type: 'image', content: artifact.data };
                     }
                 }
             }
@@ -876,35 +944,75 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                     if (attachment.type === 'image' || attachment.content_type?.startsWith('image/')) {
                         if (attachment.url) {
                             debugLog('✅ Found attachment.url');
-                            return attachment.url;
+                            return { type: 'image', content: attachment.url };
                         }
                         if (attachment.data) {
                             debugLog('✅ Found attachment.data');
-                            return attachment.data;
+                            return { type: 'image', content: attachment.data };
                         }
                     }
                 }
             }
 
             // 未找到
-            debugLog('❌ No image found after checking all methods');
+            debugLog('❌ No content found after checking all methods');
             return null;
         }
 
         // 图片URL解析器
         function extractImageUrl(text) {
             // 方法1: Markdown格式 ![](url)
-            let match = text.match(/!\[.*?\]\((https?:\/\/\S+?\.(?:png|jpg|jpeg|webp))\)/i);
+            let match = text.match(/!\[.*?\]\((https?:\/\/\S+?\.(?:png|jpg|jpeg|webp|gif))\)/i);
             if (match) return match[1];
-            
+
             // 方法2: 纯URL
-            match = text.match(/(https?:\/\/\S+?\.(?:png|jpg|jpeg|webp))/i);
+            match = text.match(/(https?:\/\/\S+?\.(?:png|jpg|jpeg|webp|gif))/i);
             if (match) return match[1];
-            
-            // 方法3: 任何https链接（最后尝试）
-            match = text.match(/(https?:\/\/[^\s<>"]+)/i);
+
+            // 方法3: data:image base64
+            match = text.match(/(data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+)/);
             if (match) return match[1];
-            
+
+            return null;
+        }
+
+        // 媒体URL解析器（视频/音频）
+        function extractMediaUrl(text, type) {
+            let extensions;
+            if (type === 'video') {
+                extensions = 'mp4|webm|ogg|mov|avi|mkv';
+            } else if (type === 'audio') {
+                extensions = 'mp3|wav|ogg|m4a|flac|aac';
+            } else {
+                return null;
+            }
+
+            // Markdown格式
+            let match = text.match(new RegExp(`!\\[.*?\\]\\((https?:\\/\\/\\S+?\\.(?:${extensions}))\\)`, 'i'));
+            if (match) return match[1];
+
+            // 纯URL
+            match = text.match(new RegExp(`(https?:\\/\\/\\S+?\\.(?:${extensions}))`, 'i'));
+            if (match) return match[1];
+
+            return null;
+        }
+
+        // 文件下载链接解析器
+        function extractFileUrl(text) {
+            // 检测常见下载链接格式
+            // 格式1: [filename](url)
+            let match = text.match(/\[([^\]]+\.(pdf|doc|docx|xls|xlsx|zip|rar|7z))\]\((https?:\/\/[^\)]+)\)/i);
+            if (match) return { url: match[3], filename: match[1] };
+
+            // 格式2: 直接URL
+            match = text.match(/(https?:\/\/\S+\.(pdf|doc|docx|xls|xlsx|zip|rar|7z))/i);
+            if (match) {
+                const url = match[1];
+                const filename = url.split('/').pop();
+                return { url, filename };
+            }
+
             return null;
         }
 
@@ -969,13 +1077,15 @@ Avoid: 3D elements, realistic photos, cartoon style`;
             }
         }
 
-        // 结果相关
-        function addResultCard(modelName, imageUrl, cost, isError = false, errorMsg = '') {
-            currentResults.push({ modelName, imageUrl, cost, isError, errorMsg });
-            
+        // 结果相关 - 通用内容渲染器
+        function addResultCard(modelName, result, cost, isError = false, errorMsg = '') {
+            // 保存结果（兼容旧格式和新格式）
+            const resultData = result && result.type ? result : { type: 'unknown', content: result };
+            currentResults.push({ modelName, result: resultData, cost, isError, errorMsg });
+
             const card = document.createElement('div');
             card.className = 'image-card glass-dark rounded-2xl overflow-hidden';
-            
+
             if (isError) {
                 // 错误卡片
                 const errorDiv = document.createElement('div');
@@ -1005,154 +1115,364 @@ Avoid: 3D elements, realistic photos, cartoon style`;
                 card.appendChild(infoDiv);
             } else {
                 console.log('📦 Creating result card for:', modelName);
-                console.log('📦 ImageURL type:', typeof imageUrl);
-                console.log('📦 ImageURL length:', imageUrl ? imageUrl.length : 0);
-                console.log('📦 ImageURL preview:', imageUrl ? imageUrl.substring(0, 100) : 'null');
-                
-                // 检查是否是有效的图片数据
-                const isBase64 = imageUrl && imageUrl.startsWith('data:image');
-                const isHttpUrl = imageUrl && imageUrl.startsWith('http');
-                
-                console.log('📦 isBase64:', isBase64);
-                console.log('📦 isHttpUrl:', isHttpUrl);
-                
-                if (isBase64 || isHttpUrl) {
-                    // 使用JavaScript创建图片元素，避免HTML字符串问题
-                    const imgContainer = document.createElement('div');
-                    imgContainer.className = 'aspect-square bg-gray-100 relative';
-                    
-                    const img = document.createElement('img');
-                    img.className = 'w-full h-full object-cover';
-                    img.alt = modelName;
-                    
-                    // 图片加载成功
-                    img.onload = function() {
-                        console.log('✅ 图片加载成功:', modelName);
-                    };
-                    
-                    // 图片加载失败
-                    img.onerror = function() {
-                        console.error('❌ 图片加载失败:', modelName);
-                        imgContainer.innerHTML = `
-                            <div class="w-full h-full flex flex-col items-center justify-center p-4">
-                                <div class="text-4xl mb-2">⚠️</div>
-                                <div class="text-gray-600 text-xs text-center mb-2">图片加载失败</div>
-                                <div class="text-gray-500 text-xs text-center mb-2">数据长度: ${imageUrl.length}</div>
-                                <button class="text-xs text-blue-600 underline" onclick="copyToClipboard('${modelName}')">
-                                    复制base64
-                                </button>
-                            </div>
-                        `;
-                    };
-                    
-                    // 设置src - 关键！
-                    img.src = imageUrl;
-                    
-                    imgContainer.appendChild(img);
-                    
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-4';
-                    infoDiv.innerHTML = `
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-800 font-semibold">${modelName}</span>
-                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                ⬇️ 下载
-                            </button>
-                            <button class="flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">
-                                🔍 数据
-                            </button>
-                        </div>
-                    `;
-                    
-                    const buttons = infoDiv.querySelectorAll('button');
-                    buttons[0].onclick = (e) => {
-                        e.stopPropagation();
-                        downloadImage(imageUrl, modelName);
-                    };
-                    buttons[1].onclick = (e) => {
-                        e.stopPropagation();
-                        showRawData(modelName);
-                    };
-                    
-                    card.appendChild(imgContainer);
-                    card.appendChild(infoDiv);
-                    
-                    card.style.cursor = 'pointer';
-                    card.onclick = () => showImageModal(imageUrl);
-                    
-                } else {
-                    // 不是图片格式
-                    console.warn('⚠️ 返回的不是图片格式');
-                    const dataDiv = document.createElement('div');
-                    dataDiv.className = 'aspect-square bg-blue-50 flex items-center justify-center p-6 overflow-auto';
-                    dataDiv.innerHTML = `
-                        <div class="text-center w-full">
-                            <div class="text-4xl mb-2">📄</div>
-                            <div class="text-blue-600 text-sm font-medium mb-2">返回了数据</div>
-                            <div class="text-gray-600 text-xs mb-3">但不是图片格式</div>
-                            <div class="bg-white/50 p-2 rounded text-left">
-                                <pre class="text-xs overflow-auto max-h-32">${imageUrl ? imageUrl.substring(0, 200) : '无数据'}</pre>
-                            </div>
-                        </div>
-                    `;
-                    
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'p-4';
-                    infoDiv.innerHTML = `
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-gray-800 font-semibold">${modelName}</span>
-                            <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
-                        </div>
-                        <button class="w-full glass text-gray-800 font-medium text-sm py-2 rounded-lg hover:bg-white/30 transition">
-                            🔍 查看完整数据
-                        </button>
-                    `;
-                    infoDiv.querySelector('button').onclick = () => showRawData(modelName);
-                    
-                    card.appendChild(dataDiv);
-                    card.appendChild(infoDiv);
+                console.log('📦 Content type:', resultData.type);
+                console.log('📦 Content length:', resultData.content ? resultData.content.length : 0);
+
+                // 创建内容容器
+                const contentContainer = document.createElement('div');
+
+                // 根据内容类型渲染
+                switch (resultData.type) {
+                    case 'image':
+                        renderImageContent(contentContainer, resultData.content, modelName);
+                        break;
+                    case 'html':
+                        renderHtmlContent(contentContainer, resultData.content, modelName);
+                        break;
+                    case 'svg':
+                        renderSvgContent(contentContainer, resultData.content, modelName);
+                        break;
+                    case 'json':
+                        renderJsonContent(contentContainer, resultData.content, modelName);
+                        break;
+                    case 'text':
+                        renderTextContent(contentContainer, resultData.content, modelName);
+                        break;
+                    case 'video':
+                        renderVideoContent(contentContainer, resultData.content, modelName);
+                        break;
+                    case 'audio':
+                        renderAudioContent(contentContainer, resultData.content, modelName);
+                        break;
+                    case 'file':
+                        renderFileContent(contentContainer, resultData.content, resultData.metadata, modelName);
+                        break;
+                    default:
+                        renderUnknownContent(contentContainer, resultData.content, modelName);
                 }
+
+                // 创建信息栏
+                const infoDiv = createInfoBar(modelName, cost, resultData.type, resultData.content);
+
+                card.appendChild(contentContainer);
+                card.appendChild(infoDiv);
             }
-            
+
             document.getElementById('resultsGrid').appendChild(card);
         }
-        
+
+        // 图片内容渲染器
+        function renderImageContent(container, imageUrl, modelName) {
+            container.className = 'aspect-square bg-gray-100 relative';
+
+            const img = document.createElement('img');
+            img.className = 'w-full h-full object-cover';
+            img.alt = modelName;
+
+            img.onload = function() {
+                console.log('✅ 图片加载成功:', modelName);
+            };
+
+            img.onerror = function() {
+                console.error('❌ 图片加载失败:', modelName);
+                container.innerHTML = `
+                    <div class="w-full h-full flex flex-col items-center justify-center p-4">
+                        <div class="text-4xl mb-2">⚠️</div>
+                        <div class="text-gray-600 text-xs text-center mb-2">图片加载失败</div>
+                        <div class="text-gray-500 text-xs text-center mb-2">数据长度: ${imageUrl.length}</div>
+                    </div>
+                `;
+            };
+
+            img.src = imageUrl;
+            container.appendChild(img);
+            container.style.cursor = 'pointer';
+            container.onclick = () => showImageModal(imageUrl);
+        }
+
+        // HTML代码渲染器
+        function renderHtmlContent(container, htmlCode, modelName) {
+            container.className = 'aspect-square bg-white relative';
+
+            const iframe = document.createElement('iframe');
+            iframe.className = 'w-full h-full border-0';
+            iframe.sandbox = 'allow-scripts';
+            iframe.srcdoc = htmlCode;
+
+            container.appendChild(iframe);
+            container.style.cursor = 'pointer';
+            container.onclick = () => showHtmlModal(htmlCode, modelName);
+        }
+
+        // SVG代码渲染器
+        function renderSvgContent(container, svgCode, modelName) {
+            container.className = 'aspect-square bg-white flex items-center justify-center p-4';
+            container.innerHTML = svgCode;
+            container.style.cursor = 'pointer';
+            container.onclick = () => showCodeModal('SVG', svgCode, modelName);
+        }
+
+        // JSON数据渲染器
+        function renderJsonContent(container, jsonData, modelName) {
+            container.className = 'aspect-square bg-gray-50 overflow-auto p-4';
+            const pre = document.createElement('pre');
+            pre.className = 'text-xs text-gray-800 whitespace-pre-wrap';
+            try {
+                const formatted = JSON.stringify(JSON.parse(jsonData), null, 2);
+                pre.textContent = formatted;
+            } catch (e) {
+                pre.textContent = jsonData;
+            }
+            container.appendChild(pre);
+            container.style.cursor = 'pointer';
+            container.onclick = () => showCodeModal('JSON', jsonData, modelName);
+        }
+
+        // 纯文本渲染器
+        function renderTextContent(container, textContent, modelName) {
+            container.className = 'aspect-square bg-gray-50 overflow-auto p-4';
+            const pre = document.createElement('pre');
+            pre.className = 'text-sm text-gray-800 whitespace-pre-wrap';
+            pre.textContent = textContent;
+            container.appendChild(pre);
+            container.style.cursor = 'pointer';
+            container.onclick = () => showCodeModal('Text', textContent, modelName);
+        }
+
+        // 视频内容渲染器
+        function renderVideoContent(container, videoUrl, modelName) {
+            container.className = 'aspect-square bg-black flex items-center justify-center';
+            const video = document.createElement('video');
+            video.className = 'w-full h-full';
+            video.controls = true;
+            video.src = videoUrl;
+            container.appendChild(video);
+        }
+
+        // 音频内容渲染器
+        function renderAudioContent(container, audioUrl, modelName) {
+            container.className = 'aspect-square bg-gray-100 flex items-center justify-center p-8';
+            const audioContainer = document.createElement('div');
+            audioContainer.className = 'w-full text-center';
+            audioContainer.innerHTML = `
+                <div class="text-6xl mb-4">🎵</div>
+                <audio controls class="w-full">
+                    <source src="${audioUrl}">
+                    您的浏览器不支持音频播放
+                </audio>
+            `;
+            container.appendChild(audioContainer);
+        }
+
+        // 文件下载链接渲染器
+        function renderFileContent(container, fileUrl, metadata, modelName) {
+            container.className = 'aspect-square bg-blue-50 flex items-center justify-center p-8';
+            const filename = metadata?.filename || '下载文件';
+            container.innerHTML = `
+                <div class="text-center">
+                    <div class="text-6xl mb-4">📦</div>
+                    <div class="text-gray-800 font-medium mb-2">${filename}</div>
+                    <a href="${fileUrl}" download="${filename}"
+                       class="inline-block glass text-gray-800 font-medium text-sm py-2 px-4 rounded-lg hover:bg-white/30 transition">
+                        下载文件
+                    </a>
+                </div>
+            `;
+        }
+
+        // 未知类型渲染器
+        function renderUnknownContent(container, content, modelName) {
+            container.className = 'aspect-square bg-yellow-50 flex items-center justify-center p-6';
+            container.innerHTML = `
+                <div class="text-center">
+                    <div class="text-4xl mb-2">❓</div>
+                    <div class="text-gray-700 text-sm font-medium mb-2">未知内容类型</div>
+                    <div class="bg-white/50 p-2 rounded text-left max-h-32 overflow-auto">
+                        <pre class="text-xs">${content ? content.substring(0, 200) : '无数据'}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 创建信息栏
+        function createInfoBar(modelName, cost, contentType, content) {
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'p-4';
+
+            // 类型图标映射
+            const typeIcons = {
+                image: '🖼️',
+                html: '📄',
+                svg: '🎨',
+                json: '{}',
+                text: '📝',
+                video: '🎬',
+                audio: '🎵',
+                file: '📦'
+            };
+
+            const buttons = [];
+
+            // 根据类型添加不同的操作按钮
+            if (contentType === 'image') {
+                buttons.push('<button class="download-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">⬇️ 下载</button>');
+            } else if (contentType === 'html' || contentType === 'svg') {
+                buttons.push('<button class="download-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">⬇️ 下载代码</button>');
+                buttons.push('<button class="copy-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">📋 复制</button>');
+            } else if (contentType === 'json' || contentType === 'text') {
+                buttons.push('<button class="copy-btn flex-1 glass text-gray-800 font-medium text-xs py-2 rounded-lg hover:bg-white/30 transition">📋 复制</button>');
+            }
+
+            infoDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-gray-800 font-semibold">${typeIcons[contentType] || '📄'} ${modelName}</span>
+                    <span class="text-gray-600 text-sm">$${cost.toFixed(2)}</span>
+                </div>
+                ${buttons.length > 0 ? `<div class="flex gap-2">${buttons.join('')}</div>` : ''}
+            `;
+
+            // 绑定事件
+            setTimeout(() => {
+                const downloadBtn = infoDiv.querySelector('.download-btn');
+                const copyBtn = infoDiv.querySelector('.copy-btn');
+
+                if (downloadBtn) {
+                    downloadBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        downloadContent(content, contentType, modelName);
+                    };
+                }
+
+                if (copyBtn) {
+                    copyBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        copyContentToClipboard(content, modelName);
+                    };
+                }
+            }, 0);
+
+            return infoDiv;
+        }
+
+        // 下载内容
+        function downloadContent(content, type, modelName) {
+            let blob, filename;
+
+            switch (type) {
+                case 'image':
+                    downloadImage(content, modelName);
+                    return;
+                case 'html':
+                    blob = new Blob([content], { type: 'text/html' });
+                    filename = `${modelName}_${Date.now()}.html`;
+                    break;
+                case 'svg':
+                    blob = new Blob([content], { type: 'image/svg+xml' });
+                    filename = `${modelName}_${Date.now()}.svg`;
+                    break;
+                default:
+                    return;
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 复制内容到剪贴板
+        function copyContentToClipboard(content, modelName) {
+            navigator.clipboard.writeText(content).then(() => {
+                alert('✅ 已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('❌ 复制失败，请查看Console');
+            });
+        }
+
+        // 显示HTML模态框
+        function showHtmlModal(htmlCode, modelName) {
+            // 创建全屏模态框显示HTML
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50';
+            modal.innerHTML = `
+                <div class="glass rounded-3xl p-6 max-w-6xl w-full max-h-[90vh] overflow-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">${modelName} - HTML预览</h3>
+                        <button class="close-btn text-gray-800 font-bold text-2xl">&times;</button>
+                    </div>
+                    <iframe class="w-full h-[70vh] border-0 rounded-xl bg-white" sandbox="allow-scripts"></iframe>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            const iframe = modal.querySelector('iframe');
+            iframe.srcdoc = htmlCode;
+
+            modal.onclick = (e) => {
+                if (e.target === modal || e.target.classList.contains('close-btn')) {
+                    document.body.removeChild(modal);
+                }
+            };
+        }
+
+        // 显示代码模态框
+        function showCodeModal(type, code, modelName) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50';
+            modal.innerHTML = `
+                <div class="glass rounded-3xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">${modelName} - ${type}</h3>
+                        <button class="close-btn text-gray-800 font-bold text-2xl">&times;</button>
+                    </div>
+                    <pre class="bg-gray-100 p-4 rounded-xl text-sm overflow-auto max-h-[70vh]">${code}</pre>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            modal.onclick = (e) => {
+                if (e.target === modal || e.target.classList.contains('close-btn')) {
+                    document.body.removeChild(modal);
+                }
+            };
+        }
+
+        // 显示原始数据（调试用）
         function showRawData(modelName) {
-            const result = currentResults.find(r => r.modelName === modelName);
-            if (!result) {
+            const resultItem = currentResults.find(r => r.modelName === modelName);
+            if (!resultItem) {
                 alert('未找到数据');
                 return;
             }
-            
-            const data = result.imageUrl;
-            const len = data ? data.length : 0;
-            
+
+            const result = resultItem.result;
+            const content = result.content;
+            const len = content ? content.length : 0;
+
             console.log('='.repeat(50));
             console.log('模型:', modelName);
-            console.log('数据类型:', typeof data);
+            console.log('内容类型:', result.type);
             console.log('数据长度:', len);
-            console.log('完整数据:', data);
+            console.log('完整数据:', content);
             console.log('='.repeat(50));
-            
-            alert(`模型: ${modelName}\n\n数据长度: ${len} 字符\n\n前500个字符:\n${data ? data.substring(0, 500) : '无数据'}\n\n完整数据已输出到Console`);
+
+            alert(`模型: ${modelName}\n类型: ${result.type}\n\n数据长度: ${len} 字符\n\n前500个字符:\n${content ? content.substring(0, 500) : '无数据'}\n\n完整数据已输出到Console`);
         }
-        
+
+        // 兼容旧代码的copyToClipboard
         function copyToClipboard(modelName) {
-            const result = currentResults.find(r => r.modelName === modelName);
-            if (!result || !result.imageUrl) {
+            const resultItem = currentResults.find(r => r.modelName === modelName);
+            if (!resultItem || !resultItem.result) {
                 alert('无数据可复制');
                 return;
             }
-            
-            navigator.clipboard.writeText(result.imageUrl).then(() => {
-                alert('Base64已复制到剪贴板');
-            }).catch(err => {
-                console.error('复制失败:', err);
-                alert('复制失败，请查看Console');
-            });
+
+            copyContentToClipboard(resultItem.result.content, modelName);
         }
 
         function retryModel(modelName) {
