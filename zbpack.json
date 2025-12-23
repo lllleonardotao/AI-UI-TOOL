@@ -1,9 +1,0 @@
-{
-  "app_type": "nodejs",
-  "build_command": "npm install",
-  "start_command": "node server.js",
-  "port": 3000,
-  "nodejs": {
-    "version": "18"
-  }
-}
